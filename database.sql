@@ -64,6 +64,28 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ----------------------------------------------------------
+-- 4. Table structure for `contributions` (Pledges & Payments)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `contributions` (
+  `id` VARCHAR(255) NOT NULL,
+  `initiative_id` VARCHAR(255) NOT NULL,
+  `pledge_amount` DECIMAL(10, 2) NOT NULL,
+  `currency` VARCHAR(10) NOT NULL DEFAULT 'BRL',
+  `supporter_name` VARCHAR(255) NOT NULL,
+  `supporter_email` VARCHAR(255) NOT NULL,
+  `supporter_phone` VARCHAR(255) NOT NULL,
+  `gateway` VARCHAR(50) NOT NULL, -- 'stripe' or 'mercadopago'
+  `transaction_reference` VARCHAR(255) NOT NULL UNIQUE,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'pending',
+  `additional_notes` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX idx_transaction_ref (`transaction_reference`),
+  FOREIGN KEY (`initiative_id`) REFERENCES `initiatives`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- ==========================================================
 -- SEED DATA SECTION
 -- ==========================================================

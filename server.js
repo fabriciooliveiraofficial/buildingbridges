@@ -7,6 +7,13 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import Stripe from 'stripe';
+
+// Load environment variables immediately
+dotenv.config();
+
+// Initialize Stripe client
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51MockStripeKeyPlaceholder');
 
 // --- NATIVE CRYPTOGRAPHY AUTH SECURITY SYSTEM ---
 
@@ -66,9 +73,6 @@ function verifyToken(token) {
   }
 }
 
-// Load environment variables
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -78,6 +82,16 @@ const PORT = process.env.PORT || 5000;
 // Express middlewares
 app.use(cors());
 app.use(express.json());
+
+// Database connection health check middleware
+app.use('/api', (req, res, next) => {
+  if (!pool) {
+    return res.status(500).json({
+      error: 'Conexão com o banco de dados MySQL falhou. Por favor, verifique se o serviço local do MySQL (ex: XAMPP, WampServer ou MySQL nativo) está rodando na porta 3306 e se as credenciais no arquivo .env estão corretas. (Database connection failed. Please ensure your local MySQL server is running and configured correctly in your .env file).'
+    });
+  }
+  next();
+});
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -210,6 +224,27 @@ async function initializeDatabase() {
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         INDEX idx_email (\`email\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Create the 'contributions' table if it does not exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`contributions\` (
+        \`id\` VARCHAR(255) NOT NULL,
+        \`initiative_id\` VARCHAR(255) NOT NULL,
+        \`pledge_amount\` DECIMAL(10, 2) NOT NULL,
+        \`currency\` VARCHAR(10) NOT NULL DEFAULT 'BRL',
+        \`supporter_name\` VARCHAR(255) NOT NULL,
+        \`supporter_email\` VARCHAR(255) NOT NULL,
+        \`supporter_phone\` VARCHAR(255) NOT NULL,
+        \`gateway\` VARCHAR(50) NOT NULL,
+        \`transaction_reference\` VARCHAR(255) NOT NULL UNIQUE,
+        \`status\` VARCHAR(50) NOT NULL DEFAULT 'pending',
+        \`additional_notes\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        INDEX idx_transaction_ref (\`transaction_reference\`),
+        FOREIGN KEY (\`initiative_id\`) REFERENCES \`initiatives\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     
@@ -355,7 +390,7 @@ async function initializeDatabase() {
       console.log('Solidarity initiatives seeded successfully.');
     }
   } catch (error) {
-    console.error('Failed to initialize database:', error.message);
+    console.error('Failed to initialize database:', error);
   }
 }
 
@@ -700,6 +735,324 @@ app.get('/api/auth/me', async (req, res) => {
   } catch (err) {
     console.error('API Error /api/auth/me:', err);
     res.status(500).json({ error: 'Database error verifying session.' });
+  }
+});
+
+// --- DUAL-GATEWAY CHECKOUT INTEGRATION (Stripe & Mercado Pago) ---
+
+// POST /api/checkout/create-session - Generate hosted checkout sessions
+app.post('/api/checkout/create-session', async (req, res) => {
+  try {
+    const { initiative_id, amount, currency, name, email, phone, notes } = req.body;
+
+    if (!initiative_id || !amount || !currency || !name || !email || !phone) {
+      return res.status(400).json({ error: 'Missing required fields (initiative_id, amount, currency, name, email, phone).' });
+    }
+
+    // 1. Fetch initiative details from MySQL to verify price/title
+    const [initRows] = await pool.query('SELECT * FROM `initiatives` WHERE `id` = ?', [initiative_id]);
+    if (initRows.length === 0) {
+      return res.status(404).json({ error: 'Initiative not found.' });
+    }
+    const initiative = initRows[0];
+    const value = parseFloat(amount);
+
+    // Unique reference to keep track of the transaction
+    const transactionId = `tx-${Math.random().toString(36).substring(2, 11)}`;
+
+    // 2. Route dynamically by selected currency
+    if (currency === 'BRL') {
+      // --- MERCADO PAGO CHECKOUT PRO (BRL) ---
+      const mpPreferenceUrl = 'https://api.mercadopago.com/v1/preferences';
+      
+      const payload = {
+        items: [
+          {
+            id: initiative.id,
+            title: initiative.title,
+            description: initiative.description ? initiative.description.substring(0, 255) : '',
+            picture_url: initiative.image_url,
+            category_id: 'donations',
+            quantity: 1,
+            unit_price: value
+          }
+        ],
+        payer: {
+          name: name,
+          email: email,
+          phone: {
+            number: phone
+          }
+        },
+        back_urls: {
+          success: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?gateway=mercadopago&success=true&pref_id=${transactionId}&init_id=${initiative_id}`,
+          failure: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?canceled=true`
+        },
+        auto_return: 'approved',
+        external_reference: transactionId,
+        metadata: {
+          initiative_id,
+          supporter_name: name,
+          supporter_email: email,
+          supporter_phone: phone,
+          additional_notes: notes || '',
+          currency
+        }
+      };
+
+      console.log(`[PAYMENT MP] Generating BRL preference for amount: ${value}`);
+      const mpResponse = await fetch(mpPreferenceUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-701389814429987-052618-9776b6d510db2a45da02c7d9bdc99b82-243003058'}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const mpData = await mpResponse.json();
+      if (!mpResponse.ok) {
+        throw new Error(mpData.message || 'Mercado Pago preference creation failed');
+      }
+
+      console.log(`[PAYMENT MP] Preference created. Redirect URL: ${mpData.init_point}`);
+      return res.json({ redirectUrl: mpData.init_point, transactionId });
+    } else {
+      // --- STRIPE CHECKOUT SESSION (USD) ---
+      console.log(`[PAYMENT STRIPE] Generating USD Checkout Session for amount: ${value}`);
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: initiative.title,
+                images: initiative.image_url ? [initiative.image_url] : [],
+                description: initiative.description ? initiative.description.substring(0, 255) : '',
+              },
+              unit_amount: Math.round(value * 100), // Stripe counts in cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?gateway=stripe&success=true&session_id={CHECKOUT_SESSION_ID}&init_id=${initiative_id}`,
+        cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?canceled=true`,
+        customer_email: email,
+        metadata: {
+          initiative_id,
+          supporter_name: name,
+          supporter_email: email,
+          supporter_phone: phone,
+          additional_notes: notes || '',
+          currency
+        }
+      });
+
+      console.log(`[PAYMENT STRIPE] Session created. Redirect URL: ${session.url}`);
+      return res.json({ redirectUrl: session.url, transactionId: session.id });
+    }
+  } catch (err) {
+    console.error('API Error /api/checkout/create-session:', err);
+    res.status(500).json({ error: err.message || 'Error creating payment session.' });
+  }
+});
+
+// POST /api/checkout/verify-session - Securely confirm payment status and record to MySQL
+app.post('/api/checkout/verify-session', async (req, res) => {
+  let dbConnection;
+  try {
+    const { gateway, session_id, payment_id } = req.body;
+
+    if (!gateway || (!session_id && !payment_id)) {
+      return res.status(400).json({ error: 'Missing required validation fields.' });
+    }
+
+    let verifiedAmount = 0;
+    let currency = 'USD';
+    let supporterName = '';
+    let supporterEmail = '';
+    let supporterPhone = '';
+    let notes = '';
+    let initiativeId = '';
+    let transactionRef = '';
+
+    if (gateway === 'stripe') {
+      console.log(`[VERIFY STRIPE] Fetching session details for: ${session_id}`);
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ error: 'Stripe transaction has not been paid.' });
+      }
+
+      verifiedAmount = session.amount_total / 100;
+      currency = session.currency.toUpperCase();
+      supporterName = session.metadata.supporter_name;
+      supporterEmail = session.metadata.supporter_email;
+      supporterPhone = session.metadata.supporter_phone;
+      notes = session.metadata.additional_notes;
+      initiativeId = session.metadata.initiative_id;
+      transactionRef = session.id;
+    } else if (gateway === 'mercadopago') {
+      console.log(`[VERIFY MP] Fetching payment details for ID: ${payment_id}`);
+      
+      // Let's call Mercado Pago's Payment API to check approval
+      const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-701389814429987-052618-9776b6d510db2a45da02c7d9bdc99b82-243003058'}`
+        }
+      });
+      
+      const mpData = await mpResponse.json();
+      if (!mpResponse.ok) {
+        throw new Error(mpData.message || 'Mercado Pago payment query failed');
+      }
+
+      if (mpData.status !== 'approved') {
+        return res.status(400).json({ error: `Mercado Pago payment status is: ${mpData.status}` });
+      }
+
+      verifiedAmount = parseFloat(mpData.transaction_amount);
+      currency = 'BRL';
+      
+      // MP payment contains external_reference or metadata
+      supporterName = mpData.metadata?.supporter_name || mpData.payer?.first_name || 'Supporter';
+      supporterEmail = mpData.metadata?.supporter_email || mpData.payer?.email || 'email@example.com';
+      supporterPhone = mpData.metadata?.supporter_phone || mpData.payer?.phone?.number || '';
+      notes = mpData.metadata?.additional_notes || '';
+      initiativeId = mpData.metadata?.initiative_id || '';
+      transactionRef = payment_id.toString();
+    } else {
+      return res.status(400).json({ error: 'Invalid gateway specified.' });
+    }
+
+    // 3. MySQL Transaction: Save contribution and increment raised amount on initiative safely
+    dbConnection = await pool.getConnection();
+    await dbConnection.beginTransaction();
+
+    // Check if transaction has already been registered
+    const [existing] = await dbConnection.query('SELECT id FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
+    
+    if (existing.length > 0) {
+      console.log(`[VERIFY] Pledged transaction already registered: ${transactionRef}`);
+      await dbConnection.rollback();
+      
+      // Already registered, return existing profile for receipt reproduction
+      const [contributionRows] = await pool.query('SELECT * FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
+      const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      
+      return res.json({
+        success: true,
+        alreadyProcessed: true,
+        contribution: contributionRows[0],
+        initiativeTitle: initiativeRows[0]?.title || 'Ação Solidária'
+      });
+    }
+
+    const contributionId = `pledge-${Math.random().toString(36).substring(2, 11)}`;
+    const contributionData = {
+      id: contributionId,
+      initiative_id: initiativeId,
+      pledge_amount: verifiedAmount,
+      currency: currency,
+      supporter_name: supporterName,
+      supporter_email: supporterEmail,
+      supporter_phone: supporterPhone,
+      gateway: gateway,
+      transaction_reference: transactionRef,
+      status: 'completed',
+      additional_notes: notes || null
+    };
+
+    // Insert contribution
+    await dbConnection.query('INSERT INTO `contributions` SET ?', contributionData);
+    
+    // Increment raised_amount of the specific initiative
+    await dbConnection.query(
+      'UPDATE `initiatives` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+      [verifiedAmount, initiativeId]
+    );
+
+    await dbConnection.commit();
+    console.log(`[VERIFY SUCCESS] Contribution successfully registered: ${contributionId}`);
+
+    const [initRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+
+    res.json({
+      success: true,
+      contribution: contributionData,
+      initiativeTitle: initRows[0]?.title || 'Ação Solidária'
+    });
+  } catch (err) {
+    if (dbConnection) await dbConnection.rollback();
+    console.error('API Error /api/checkout/verify-session:', err);
+    res.status(500).json({ error: err.message || 'Database error validating pledge.' });
+  } finally {
+    if (dbConnection) dbConnection.release();
+  }
+});
+
+// GET /api/contributions - Retrieve all contributions (Protected)
+app.get('/api/contributions', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = verifyToken(token);
+    if (!payload || (payload.role !== 'admin' && payload.role !== 'staff')) {
+      return res.status(403).json({ error: 'Administrative privileges required.' });
+    }
+
+    // Join with initiatives to display the title
+    const [rows] = await pool.query(`
+      SELECT c.*, i.title as initiative_title, p.name as project_name
+      FROM \`contributions\` c
+      LEFT JOIN \`initiatives\` i ON c.initiative_id = i.id
+      LEFT JOIN \`projects\` p ON i.project_id = p.id
+      ORDER BY c.created_at DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('API Error GET /api/contributions:', err);
+    res.status(500).json({ error: 'Database error fetching contributions list.' });
+  }
+});
+
+// POST /api/contributions/:id/status - Update contribution status (Protected)
+app.post('/api/contributions/:id/status', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = verifyToken(token);
+    if (!payload || (payload.role !== 'admin' && payload.role !== 'staff')) {
+      return res.status(403).json({ error: 'Administrative privileges required.' });
+    }
+
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required.' });
+    }
+
+    await pool.query(
+      'UPDATE `contributions` SET `status` = ? WHERE `id` = ?',
+      [status, req.params.id]
+    );
+
+    console.log(`[UPDATE STATUS] Contribution ${req.params.id} updated to status: ${status}`);
+    res.json({ success: true, status });
+  } catch (err) {
+    console.error('API Error POST /api/contributions/:id/status:', err);
+    res.status(500).json({ error: 'Database error updating contribution status.' });
   }
 });
 

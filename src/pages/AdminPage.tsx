@@ -8,11 +8,73 @@ export const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
-  // Console state: 'mission' (projects) or 'initiative' (products/experiences)
-  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative'>('mission');
+  // Console state: 'mission', 'initiative', or 'pledges'
+  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative' | 'pledges'>('mission');
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // 3. PLEDGES STATE
+  const [pledges, setPledges] = useState<any[]>([]);
+  const [pledgesLoading, setPledgesLoading] = useState(false);
+
+  const fetchPledges = async () => {
+    setPledgesLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/contributions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPledges(data);
+      } else {
+        console.error('Failed to fetch contributions:', data.error);
+      }
+    } catch (err) {
+      console.error('Error fetching contributions:', err);
+    } finally {
+      setPledgesLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (pledgeId: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/contributions/${pledgeId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (response.ok) {
+        setPledges(prev => prev.map(p => {
+          if (p.id === pledgeId) {
+            return { ...p, status: newStatus };
+          }
+          return p;
+        }));
+        setMessage({ type: 'success', text: `Status do apoio atualizado com sucesso!` });
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || 'Erro ao atualizar status.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.message || 'Erro ao atualizar status.' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeConsole === 'pledges') {
+      fetchPledges();
+    }
+  }, [activeConsole]);
   
   // 1. PROJECTS STATE
   const [formData, setFormData] = useState({
@@ -233,6 +295,17 @@ export const AdminPage: React.FC = () => {
           >
             Iniciativas (Vendas)
           </button>
+          <button 
+            type="button"
+            onClick={() => { setActiveConsole('pledges'); setMessage({ type: '', text: '' }); }}
+            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all ${
+              activeConsole === 'pledges' 
+                ? 'bg-white shadow-sm text-primary' 
+                : 'text-slate-500 hover:text-primary'
+            }`}
+          >
+            Apoios Recebidos
+          </button>
         </div>
       </div>
 
@@ -254,10 +327,131 @@ export const AdminPage: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Active Form */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border border-primary/5 shadow-xl space-y-6">
-        
-        {activeConsole === 'mission' ? (
+      {/* Active Form or Pledges Dashboard */}
+      {activeConsole === 'pledges' ? (
+        // ================== PLEDGES LIST DASHBOARD ==================
+        <div className="bg-white rounded-3xl border border-primary/5 shadow-xl p-6 sm:p-8 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-6 shrink-0">
+            <div>
+              <h3 className="text-xl font-black text-primary">Apoios Híbridos Coletados</h3>
+              <p className="text-xs text-slate-500 font-bold mt-1">Gerencie os apoios recebidos via Stripe (USD) e Mercado Pago (BRL).</p>
+            </div>
+            <button 
+              type="button"
+              onClick={fetchPledges}
+              disabled={pledgesLoading}
+              className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200"
+            >
+              <span className="material-symbols-outlined text-sm">refresh</span>
+              Atualizar
+            </button>
+          </div>
+
+          {pledgesLoading ? (
+            <div className="py-12 text-center text-slate-400 font-bold">Carregando apoios...</div>
+          ) : pledges.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                    <th className="py-4 px-4">Apoiador</th>
+                    <th className="py-4 px-4">Iniciativa / Projeto</th>
+                    <th className="py-4 px-4 text-right">Valor Pago</th>
+                    <th className="py-4 px-4">Gateway / ID</th>
+                    <th className="py-4 px-4">Observações</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-slate-700 text-xs font-semibold">
+                  {pledges.map((p) => {
+                    const cleanPhone = p.supporter_phone.replace(/[^\d]/g, '');
+                    const waLink = `https://wa.me/${cleanPhone}`;
+                    
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-4 space-y-1">
+                          <p className="font-bold text-slate-900">{p.supporter_name}</p>
+                          <p className="text-[10px] text-slate-400">{p.supporter_email}</p>
+                          {p.supporter_phone && (
+                            <a 
+                              href={waLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="inline-flex items-center gap-1 text-[10px] text-success hover:underline font-black mt-1"
+                            >
+                              <span className="material-symbols-outlined text-xs">chat</span>
+                              {p.supporter_phone}
+                            </a>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 space-y-0.5">
+                          <p className="font-bold text-slate-800">{p.initiative_title || 'Ação Solidária'}</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-black">Missão: {p.project_name || 'Geral'}</p>
+                        </td>
+                        <td className="py-4 px-4 text-right font-black text-slate-900">
+                          {p.currency === 'BRL' ? 'R$' : '$'} {parseFloat(p.pledge_amount).toFixed(2)}
+                        </td>
+                        <td className="py-4 px-4 space-y-0.5">
+                          <span className={`inline-block text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest ${
+                            p.gateway === 'stripe' ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'
+                          }`}>
+                            {p.gateway}
+                          </span>
+                          <p className="text-[9px] text-slate-400 font-bold truncate max-w-[120px]">{p.transaction_reference}</p>
+                        </td>
+                        <td className="py-4 px-4 max-w-[200px] truncate" title={p.additional_notes}>
+                          {p.additional_notes || <span className="text-slate-300 font-normal italic">Nenhuma</span>}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            p.status === 'completed' 
+                              ? 'bg-success/10 text-success' 
+                              : p.status === 'contacted'
+                              ? 'bg-blue-500/10 text-blue-500'
+                              : 'bg-yellow-500/10 text-yellow-500'
+                          }`}>
+                            {p.status === 'completed' ? 'Pago' : p.status === 'contacted' ? 'Contactado' : 'Pendente'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex justify-center gap-1.5">
+                            {p.status === 'completed' && (
+                              <button 
+                                type="button"
+                                onClick={() => handleUpdateStatus(p.id, 'contacted')}
+                                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 font-black text-[10px] rounded-lg tracking-wider uppercase transition-colors"
+                              >
+                                Contactar
+                              </button>
+                            )}
+                            {p.status !== 'completed' && p.status !== 'delivered' && (
+                              <button 
+                                type="button"
+                                onClick={() => handleUpdateStatus(p.id, 'completed')}
+                                className="px-3 py-1.5 bg-success/10 hover:bg-success/20 text-success font-black text-[10px] rounded-lg tracking-wider uppercase transition-colors"
+                              >
+                                Concluir
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-16 text-center space-y-4">
+              <span className="material-symbols-outlined text-6xl text-slate-200">payments</span>
+              <p className="text-lg font-bold text-slate-400">Nenhum apoio coletado até o momento.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border border-primary/5 shadow-xl space-y-6">
+          {activeConsole === 'mission' ? (
           // ================== MISSION FORM ==================
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -586,6 +780,7 @@ export const AdminPage: React.FC = () => {
           {!loading && <span className="material-symbols-outlined">publish</span>}
         </button>
       </form>
+      )}
     </div>
   );
 };
