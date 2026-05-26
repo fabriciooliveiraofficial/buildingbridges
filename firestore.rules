@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // 2. Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['displayName', 'email', 'role', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+             data.email is string && data.email == request.auth.token.email &&
+             data.role in ['admin', 'staff'] &&
+             data.createdAt is timestamp;
+    }
+
+    // 1. The "Master Gate" & 6. PII Isolation
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Prevent user listing for security (8. Secure List Queries)
+      allow list: if isAdmin();
+
+      allow create: if isOwner(userId) && 
+                      isValidUser(incoming()) && 
+                      incoming().role == 'staff'; // New users default to 'staff'
+
+      allow update: if (isOwner(userId) && 
+                       isValidUser(incoming()) && 
+                       incoming().role == existing().role && // Immutable role for owner
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName'])) ||
+                    isAdmin();
+
+      allow delete: if isAdmin();
+    }
+  }
+}

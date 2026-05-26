@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "User": {
+      "title": "Staff User",
+      "description": "Represents an NGO staff member with specific permissions.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "description": "Full name of the user" },
+        "email": { "type": "string", "format": "email", "description": "Verified email address" },
+        "role": { "type": "string", "enum": ["admin", "staff"], "description": "Access level of the user" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the account was created" }
+      },
+      "required": ["displayName", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user profiles for NGO staff."
+    }
+  }
+}

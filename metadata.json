@@ -1,0 +1,5 @@
+{
+  "name": "Building Bridges",
+  "description": "A humanitarian fintech-style disaster relief platform providing transparent, real-time aid for communities in Brazil and the USA.",
+  "requestFramePermissions": ["geolocation"]
+}

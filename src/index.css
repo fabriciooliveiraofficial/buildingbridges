@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0a2540;
+  --color-accent: #FF8C00;
+  --color-success: #22c55e;
+  --color-background-light: #f6f7f8;
+  --color-background-dark: #111921;
+  
+  --font-display: "Inter", sans-serif;
+  --font-heading: "Montserrat", sans-serif;
+
+  --breakpoint-xs: 480px;
+}
+
+@layer base {
+  body {
+    @apply font-display bg-background-light text-slate-900 antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
