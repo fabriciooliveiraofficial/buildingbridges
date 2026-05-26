@@ -116,6 +116,28 @@ async function initializeDatabase() {
         INDEX idx_status (\`status\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Create the 'initiatives' table if it does not exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`initiatives\` (
+        \`id\` VARCHAR(255) NOT NULL,
+        \`project_id\` VARCHAR(255) NOT NULL,
+        \`title\` VARCHAR(255) NOT NULL,
+        \`type\` VARCHAR(50) NOT NULL,
+        \`description\` TEXT NOT NULL,
+        \`suggested_price\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        \`impact_description\` VARCHAR(255) NOT NULL,
+        \`image_url\` VARCHAR(512) NULL,
+        \`goal_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        \`raised_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        \`status\` VARCHAR(50) NOT NULL DEFAULT 'active',
+        \`created_by_user\` VARCHAR(255) NOT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        INDEX idx_initiative_status (\`status\`),
+        FOREIGN KEY (\`project_id\`) REFERENCES \`projects\`(\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
     
     console.log('Database tables verified.');
 
@@ -184,7 +206,79 @@ async function initializeDatabase() {
           project
         );
       }
-      console.log('Seed data inserted successfully.');
+      console.log('Seed projects data inserted successfully.');
+    }
+
+    // Seed default initiatives if the database is empty
+    const [initRows] = await pool.query('SELECT COUNT(*) as count FROM `initiatives`');
+    if (initRows[0].count === 0) {
+      console.log('Seeding default solidarity initiatives...');
+      const seedInitiatives = [
+        [
+          'camiseta-oficial',
+          'rio-grande',
+          'Camiseta Oficial Bridges Builders',
+          'item',
+          'Feita com algodão 100% orgânico sustentável. Ao vestir esta camiseta, você se torna um embaixador oficial da causa e espalha a mensagem de reconstrução de pontes e vidas.',
+          80.00,
+          'Garante 5 dias de alimentação e água limpa para uma família no campo',
+          'https://picsum.photos/seed/tshirt/800/600',
+          5000.00,
+          1200.00,
+          'active',
+          'system_seed'
+        ],
+        [
+          'churrasco-solidario',
+          'rio-grande',
+          'Churrasco Solidário dos Voluntários',
+          'experience',
+          'Junte-se à nossa grande confraternização solidária. Um dia de churrasco, risadas e comunhão preparado inteiramente por voluntários dedicados à nossa causa. Toda a arrecadação vai para a reconstrução de moradias.',
+          40.00,
+          'Financia a compra de 2 tijolos ecológicos para a reconstrução',
+          'https://picsum.photos/seed/bbq/800/600',
+          3000.00,
+          1400.00,
+          'active',
+          'system_seed'
+        ],
+        [
+          'bone-construtores',
+          'gulf-coast',
+          'Boné Oficial Construtores de Pontes',
+          'item',
+          'Boné premium com bordado exclusivo. Ideal para proteger do sol nos dias de ações esportivas ou no dia a dia. Vista o selo de apoio à resiliência das comunidades.',
+          50.00,
+          'Financia 1 lâmpada solar portátil de emergência para famílias isoladas',
+          'https://picsum.photos/seed/cap/800/600',
+          2500.00,
+          950.00,
+          'active',
+          'system_seed'
+        ],
+        [
+          'corrida-comunitaria',
+          'gulf-coast',
+          'Corrida de Rua Beneficente 5K',
+          'experience',
+          'Uma atividade esportiva aberta para todas as idades. Vamos correr, caminhar e nos exercitar juntos por um bem maior. O valor da inscrição apoia o centro comunitário solar da Costa do Golfo.',
+          60.00,
+          'Financia kit de primeiros socorros completo para o centro de resiliência',
+          'https://picsum.photos/seed/run/800/600',
+          4000.00,
+          2100.00,
+          'active',
+          'system_seed'
+        ]
+      ];
+
+      for (const initiative of seedInitiatives) {
+        await pool.query(
+          'INSERT INTO `initiatives` (`id`, `project_id`, `title`, `type`, `description`, `suggested_price`, `impact_description`, `image_url`, `goal_amount`, `raised_amount`, `status`, \`created_by_user\`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          initiative
+        );
+      }
+      console.log('Solidarity initiatives seeded successfully.');
     }
   } catch (error) {
     console.error('Failed to initialize database:', error.message);
@@ -299,6 +393,79 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   } catch (err) {
     console.error('Upload Error:', err);
     res.status(500).json({ error: err.message || 'Error uploading file.' });
+  }
+});
+
+// GET /api/initiatives - Retrieve all active initiatives, optionally filtered by project_id
+app.get('/api/initiatives', async (req, res) => {
+  try {
+    const projectId = req.query.project_id;
+    let rows;
+    
+    if (projectId) {
+      [rows] = await pool.query('SELECT * FROM `initiatives` WHERE `project_id` = ? AND `status` = "active" ORDER BY `created_at` DESC', [projectId]);
+    } else {
+      [rows] = await pool.query('SELECT * FROM `initiatives` WHERE `status` = "active" ORDER BY `created_at` DESC');
+    }
+    
+    res.json(rows);
+  } catch (err) {
+    console.error('API Error /api/initiatives:', err);
+    res.status(500).json({ error: 'Database error fetching initiatives' });
+  }
+});
+
+// GET /api/initiatives/:id - Retrieve details of a single initiative
+app.get('/api/initiatives/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM `initiatives` WHERE `id` = ?', [req.params.id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Initiative not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('API Error /api/initiatives/:id:', err);
+    res.status(500).json({ error: 'Database error fetching initiative' });
+  }
+});
+
+// POST /api/initiatives - Create a new solidarity initiative
+app.post('/api/initiatives', async (req, res) => {
+  try {
+    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, created_by_user } = req.body;
+    
+    if (!project_id || !title || !type || !suggested_price || !impact_description) {
+      return res.status(400).json({ error: 'Missing required fields (project_id, title, type, suggested_price, impact_description).' });
+    }
+
+    const rawId = slugify(title);
+    const uniqueSuffix = Math.random().toString(36).substring(2, 7);
+    const id = `${rawId}-${uniqueSuffix}`;
+
+    const initiativeData = {
+      id,
+      project_id,
+      title,
+      type,
+      description: description || '',
+      suggested_price: parseFloat(suggested_price),
+      impact_description,
+      image_url: image_url || 'https://picsum.photos/seed/default-initiative/800/600',
+      goal_amount: parseFloat(goal_amount || 0),
+      raised_amount: 0.00,
+      status: 'active',
+      created_by_user: created_by_user || 'user_submission'
+    };
+
+    await pool.query('INSERT INTO `initiatives` SET ?', initiativeData);
+    console.log(`New solidarity initiative created successfully: ${id}`);
+    
+    res.status(201).json({ success: true, initiative: initiativeData });
+  } catch (err) {
+    console.error('API Error POST /api/initiatives:', err);
+    res.status(500).json({ error: 'Database error creating initiative' });
   }
 });
 

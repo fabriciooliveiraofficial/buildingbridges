@@ -10,6 +10,7 @@ const resources = {
         "missions": "Urgent Missions",
         "impact": "Our Impact",
         "transparency": "Transparency",
+        "actionHub": "Action Hub",
         "donate": "DONATE NOW"
       },
       "hero": {
@@ -176,6 +177,7 @@ const resources = {
         "missions": "Missões Urgentes",
         "impact": "Nosso Impacto",
         "transparency": "Transparência",
+        "actionHub": "Hub de Ação",
         "donate": "DOE AGORA"
       },
       "hero": {
@@ -342,6 +344,7 @@ const resources = {
         "missions": "Misiones Urgentes",
         "impact": "Nuestro Impacto",
         "transparency": "Transparencia",
+        "actionHub": "Hub de Acción",
         "donate": "DONA AHORA"
       },
       "hero": {

@@ -7,9 +7,11 @@ class MockSupabaseClient {
   private uploadMap = new Map<string, string>();
 
   from(table: string) {
-    if (table !== 'projects') {
+    if (table !== 'projects' && table !== 'initiatives') {
       throw new Error(`Table "${table}" is not supported in the Hostinger MySQL adapter.`);
     }
+
+    const baseUrl = table === 'projects' ? '/api/projects' : '/api/initiatives';
 
     let limitVal: number | null = null;
     let eqField: string | null = null;
@@ -33,7 +35,7 @@ class MockSupabaseClient {
       },
       insert: async (dataArray: any[]) => {
         try {
-          const response = await fetch('/api/projects', {
+          const response = await fetch(baseUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -43,25 +45,28 @@ class MockSupabaseClient {
 
           if (!response.ok) {
             const errData = await response.json();
-            return { data: null, error: new Error(errData.error || 'Failed to insert project') };
+            return { data: null, error: new Error(errData.error || `Failed to insert in ${table}`) };
           }
 
           const resData = await response.json();
-          return { data: [resData.project], error: null };
+          const returnedItem = table === 'projects' ? resData.project : resData.initiative;
+          return { data: [returnedItem], error: null };
         } catch (error: any) {
-          console.error('API Error in insert:', error);
+          console.error(`API Error in insert to ${table}:`, error);
           return { data: null, error };
         }
       },
       // Support Promise chaining/awaiting directly on the builder
       then: async (resolve: any, reject: any) => {
         try {
-          let url = '/api/projects';
+          let url = baseUrl;
           
           if (eqField === 'id' && eqValue) {
-            url = `/api/projects/${encodeURIComponent(eqValue)}`;
+            url = `${baseUrl}/${encodeURIComponent(eqValue)}`;
+          } else if (eqField === 'project_id' && eqValue) {
+            url = `${baseUrl}?project_id=${encodeURIComponent(eqValue)}`;
           } else if (limitVal) {
-            url = `/api/projects?limit=${limitVal}`;
+            url = `${baseUrl}?limit=${limitVal}`;
           }
 
           const response = await fetch(url);
@@ -73,7 +78,7 @@ class MockSupabaseClient {
           const data = await response.json();
           return resolve({ data, error: null });
         } catch (error: any) {
-          console.error('API Error in select:', error);
+          console.error(`API Error in select from ${table}:`, error);
           return resolve({ data: null, error });
         }
       }

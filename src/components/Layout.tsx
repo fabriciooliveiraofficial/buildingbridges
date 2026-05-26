@@ -23,6 +23,7 @@ export const Header: React.FC = () => {
 
   const navLinks = [
     { to: '/projects', label: t('nav.missions') },
+    { to: '/action-hub', label: t('nav.actionHub') || 'Hub de Ação' },
     { to: '/impact', label: t('nav.impact') },
     { to: '/transparency', label: t('nav.transparency') },
     { to: '/contact', label: t('footer.contact') },

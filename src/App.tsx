@@ -22,6 +22,7 @@ import { AdminPage } from './pages/AdminPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { RegisterPage } from './pages/Auth/RegisterPage';
 import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
+import { InitiativesPage } from './pages/InitiativesPage';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/action-hub" element={<InitiativesPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transparency" element={<TransparencyPage />} />
