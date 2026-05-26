@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { auth } from '../../lib/firebase';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -17,7 +15,20 @@ export const ForgotPasswordPage: React.FC = () => {
     setMessage({ type: '', text: '' });
     
     try {
-      await sendPasswordResetEmail(auth, email);
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset request');
+      }
+
       setMessage({ type: 'success', text: t('auth.resetSuccess') });
     } catch (err: any) {
       console.error(err);

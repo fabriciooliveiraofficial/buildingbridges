@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { auth, db } from '../../lib/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,21 +20,25 @@ export const RegisterPage: React.FC = () => {
     setError('');
     
     try {
-      // 1. Create Auth Account
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // 2. Update Display Name in Auth
-      await updateProfile(user, { displayName: name });
-
-      // 3. Create Firestore Profile
-      await setDoc(doc(db, 'users', user.uid), {
-        displayName: name,
-        email: email,
-        role: 'staff',
-        createdAt: serverTimestamp()
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          display_name: name,
+          email: email,
+          password: password
+        })
       });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
+      }
+
+      login(data.token, data.user);
       navigate('/admin');
     } catch (err: any) {
       console.error(err);

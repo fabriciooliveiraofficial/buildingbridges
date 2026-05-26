@@ -6,6 +6,65 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+
+// --- NATIVE CRYPTOGRAPHY AUTH SECURITY SYSTEM ---
+
+// Hash password with native scryptSync
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  const hash = derivedKey.toString('hex');
+  return { hash, salt };
+}
+
+// Verify password
+function verifyPassword(password, hash, salt) {
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return derivedKey.toString('hex') === hash;
+}
+
+// Token signing key
+const JWT_SECRET = process.env.JWT_SECRET || 'bridges_builders_super_secret_key_2026';
+
+// Generate HMAC signed session token
+function generateToken(payload) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify({ 
+    ...payload, 
+    exp: Date.now() + 24 * 60 * 60 * 1000 // 24 hours exp
+  })).toString('base64url');
+  
+  const signature = crypto
+    .createHmac('sha256', JWT_SECRET)
+    .update(`${header}.${body}`)
+    .digest('base64url');
+    
+  return `${header}.${body}.${signature}`;
+}
+
+// Verify HMAC signed token
+function verifyToken(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const [header, body, signature] = parts;
+    const computedSignature = crypto
+      .createHmac('sha256', JWT_SECRET)
+      .update(`${header}.${body}`)
+      .digest('base64url');
+      
+    if (signature !== computedSignature) return null;
+    
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (payload.exp && Date.now() > payload.exp) return null;
+    
+    return payload;
+  } catch (err) {
+    return null;
+  }
+}
 
 // Load environment variables
 dotenv.config();
@@ -136,6 +195,21 @@ async function initializeDatabase() {
         PRIMARY KEY (\`id\`),
         INDEX idx_initiative_status (\`status\`),
         FOREIGN KEY (\`project_id\`) REFERENCES \`projects\`(\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Create the 'users' table if it does not exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`users\` (
+        \`id\` VARCHAR(255) NOT NULL,
+        \`display_name\` VARCHAR(255) NOT NULL,
+        \`email\` VARCHAR(255) NOT NULL UNIQUE,
+        \`password_hash\` VARCHAR(255) NOT NULL,
+        \`password_salt\` VARCHAR(255) NOT NULL,
+        \`role\` VARCHAR(50) NOT NULL DEFAULT 'staff',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        INDEX idx_email (\`email\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     
@@ -466,6 +540,166 @@ app.post('/api/initiatives', async (req, res) => {
   } catch (err) {
     console.error('API Error POST /api/initiatives:', err);
     res.status(500).json({ error: 'Database error creating initiative' });
+  }
+});
+
+// --- NATIVE AUTHENTICATION ENDPOINTS (MySQL) ---
+
+// POST /api/auth/register - Register a new NGO staff member
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { display_name, email, password } = req.body;
+
+    if (!display_name || !email || !password) {
+      return res.status(400).json({ error: 'Display name, email, and password are required fields.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Verify if user already exists
+    const [existing] = await pool.query('SELECT id FROM `users` WHERE `email` = ?', [normalizedEmail]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'An account with this email already exists.' });
+    }
+
+    // Generate unique ID and secure password cryptography hash + salt
+    const id = `user-${Math.random().toString(36).substring(2, 11)}`;
+    const { hash, salt } = hashPassword(password);
+    const role = 'staff'; // Default role for registrations
+
+    const userData = {
+      id,
+      display_name,
+      email: normalizedEmail,
+      password_hash: hash,
+      password_salt: salt,
+      role
+    };
+
+    await pool.query('INSERT INTO `users` SET ?', userData);
+    console.log(`Staff registered successfully: ${normalizedEmail}`);
+
+    // Generate signed session token
+    const token = generateToken({ id, role });
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id,
+        display_name,
+        email: normalizedEmail,
+        role
+      }
+    });
+  } catch (err) {
+    console.error('API Error /api/auth/register:', err);
+    res.status(500).json({ error: 'Database error registering staff.' });
+  }
+});
+
+// POST /api/auth/login - Authenticate staff credentials and return signed token
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Fetch user credentials
+    const [rows] = await pool.query('SELECT * FROM `users` WHERE `email` = ?', [normalizedEmail]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const user = rows[0];
+
+    // Verify password securely
+    const isValid = verifyPassword(password, user.password_hash, user.password_salt);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // Generate signed session token
+    const token = generateToken({ id: user.id, role: user.role });
+    console.log(`Staff logged in successfully: ${normalizedEmail}`);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        display_name: user.display_name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('API Error /api/auth/login:', err);
+    res.status(500).json({ error: 'Database error authenticating staff.' });
+  }
+});
+
+// POST /api/auth/forgot-password - Password recovery request
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if the user exists in MySQL
+    const [rows] = await pool.query('SELECT id, display_name FROM `users` WHERE `email` = ?', [normalizedEmail]);
+    
+    // Log the request to server console for admin/developer convenience
+    console.log(`[PASSWORD RESET] Request received for: ${normalizedEmail}`);
+    if (rows.length === 0) {
+      console.log(`[PASSWORD RESET] User with email ${normalizedEmail} does not exist in MySQL.`);
+    } else {
+      console.log(`[PASSWORD RESET] User found: ${rows[0].display_name} (ID: ${rows[0].id}).`);
+      console.log(`[PASSWORD RESET] TIP: To reset manually, run: UPDATE users SET password_hash = 'NEW_HASH', password_salt = 'NEW_SALT' WHERE email = '${normalizedEmail}';`);
+    }
+
+    // Always return success to prevent user enumeration attacks and matches Firebase behavior
+    res.json({
+      success: true,
+      message: 'Reset instructions have been processed.'
+    });
+  } catch (err) {
+    console.error('API Error /api/auth/forgot-password:', err);
+    res.status(500).json({ error: 'Database error processing password recovery.' });
+  }
+});
+
+// GET /api/auth/me - Verify session token and retrieve logged-in user profile
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = verifyToken(token);
+    if (!payload) {
+      return res.status(401).json({ error: 'Session expired or invalid token.' });
+    }
+
+    // Fetch up-to-date user details from MySQL
+    const [rows] = await pool.query('SELECT id, display_name, email, role, created_at FROM `users` WHERE `id` = ?', [payload.id]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'User account no longer exists.' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('API Error /api/auth/me:', err);
+    res.status(500).json({ error: 'Database error verifying session.' });
   }
 });
 

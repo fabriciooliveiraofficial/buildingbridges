@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { auth } from '../../lib/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +22,21 @@ export const LoginPage: React.FC = () => {
     setError('');
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to login');
+      }
+
+      login(data.token, data.user);
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error(err);

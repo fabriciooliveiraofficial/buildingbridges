@@ -1,13 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+
+export interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+}
 
 interface AuthContextType {
   user: User | null;
   profile: any | null;
   loading: boolean;
   isAdmin: boolean;
+  login: (token: string, userData: any) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -15,6 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  login: () => {},
+  logout: () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -22,34 +29,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setProfile(userDoc.data());
-          } else {
-            setProfile(null);
-          }
-        } catch (err) {
-          console.error("Error fetching user profile:", err);
-          setProfile(null);
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
+      });
 
-    return () => unsubscribe();
+      if (!response.ok) {
+        throw new Error('Session invalid or expired');
+      }
+
+      const data = await response.json();
+      setProfile(data);
+      setUser({
+        uid: data.id,
+        email: data.email,
+        displayName: data.display_name
+      });
+    } catch (err) {
+      console.warn("Failed to fetch user profile, clearing session:", err);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      fetchUserProfile(token);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const isAdmin = profile?.role === 'admin';
+  const login = (token: string, userData: any) => {
+    localStorage.setItem('auth_token', token);
+    setProfile(userData);
+    setUser({
+      uid: userData.id,
+      email: userData.email,
+      displayName: userData.display_name
+    });
+  };
+
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    setProfile(null);
+  };
+
+  // For this project, both 'admin' and 'staff' roles are granted NGO administrative panel permissions.
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'staff';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

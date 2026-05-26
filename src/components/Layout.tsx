@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { signOut } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 
 export const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, logout } = useAuth();
   const { currency, setCurrency } = useCurrency();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    logout();
     setIsMenuOpen(false);
     navigate('/');
   };
