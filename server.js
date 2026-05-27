@@ -227,11 +227,12 @@ async function initializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Create the 'contributions' table if it does not exist
+    // Create the 'contributions' table if it does not exist (updated for project_id support)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS \`contributions\` (
         \`id\` VARCHAR(255) NOT NULL,
-        \`initiative_id\` VARCHAR(255) NOT NULL,
+        \`initiative_id\` VARCHAR(255) NULL,
+        \`project_id\` VARCHAR(255) NULL,
         \`pledge_amount\` DECIMAL(10, 2) NOT NULL,
         \`currency\` VARCHAR(10) NOT NULL DEFAULT 'BRL',
         \`supporter_name\` VARCHAR(255) NOT NULL,
@@ -244,9 +245,38 @@ async function initializeDatabase() {
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         INDEX idx_transaction_ref (\`transaction_reference\`),
-        FOREIGN KEY (\`initiative_id\`) REFERENCES \`initiatives\`(\`id\`) ON DELETE CASCADE
+        FOREIGN KEY (\`initiative_id\`) REFERENCES \`initiatives\`(\`id\`) ON DELETE SET NULL,
+        FOREIGN KEY (\`project_id\`) REFERENCES \`projects\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Verify and alter 'contributions' table if it already existed but lacks project_id
+    try {
+      const [columns] = await pool.query('SHOW COLUMNS FROM `contributions` LIKE "project_id"');
+      if (columns.length === 0) {
+        console.log('Altering contributions table to support direct project contributions...');
+        
+        // Disable foreign key checks temporarily to make alterations safe
+        await pool.query('SET FOREIGN_KEY_CHECKS = 0');
+        
+        // Modify initiative_id to be nullable
+        await pool.query('ALTER TABLE `contributions` MODIFY `initiative_id` VARCHAR(255) NULL');
+        
+        // Add project_id column
+        await pool.query('ALTER TABLE `contributions` ADD COLUMN `project_id` VARCHAR(255) NULL AFTER `initiative_id`');
+        
+        // Add foreign key constraint for project_id
+        await pool.query('ALTER TABLE `contributions` ADD CONSTRAINT fk_contributions_project FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE CASCADE');
+        
+        // Re-enable foreign key checks
+        await pool.query('SET FOREIGN_KEY_CHECKS = 1');
+        console.log('contributions table altered successfully.');
+      }
+    } catch (err) {
+      console.error('Failed to dynamically alter contributions table:', err.message);
+      // Ensure foreign key checks are re-enabled in case of failure
+      try { await pool.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (_) {}
+    }
     
     console.log('Database tables verified.');
 
@@ -743,19 +773,36 @@ app.get('/api/auth/me', async (req, res) => {
 // POST /api/checkout/create-session - Generate hosted checkout sessions
 app.post('/api/checkout/create-session', async (req, res) => {
   try {
-    const { initiative_id, amount, currency, name, email, phone, notes } = req.body;
+    const { initiative_id, project_id, amount, currency, name, email, phone, notes } = req.body;
 
-    if (!initiative_id || !amount || !currency || !name || !email || !phone) {
-      return res.status(400).json({ error: 'Missing required fields (initiative_id, amount, currency, name, email, phone).' });
+    if ((!initiative_id && !project_id) || !amount || !currency || !name || !email || !phone) {
+      return res.status(400).json({ error: 'Missing required fields (initiative_id or project_id, amount, currency, name, email, phone).' });
     }
 
-    // 1. Fetch initiative details from MySQL to verify price/title
-    const [initRows] = await pool.query('SELECT * FROM `initiatives` WHERE `id` = ?', [initiative_id]);
-    if (initRows.length === 0) {
-      return res.status(404).json({ error: 'Initiative not found.' });
-    }
-    const initiative = initRows[0];
+    let title = '';
+    let description = '';
+    let imageUrl = '';
     const value = parseFloat(amount);
+
+    if (project_id) {
+      // 1a. Fetch project details from MySQL to verify
+      const [projRows] = await pool.query('SELECT * FROM `projects` WHERE `id` = ?', [project_id]);
+      if (projRows.length === 0) {
+        return res.status(404).json({ error: 'Project not found.' });
+      }
+      title = projRows[0].name;
+      description = projRows[0].description || '';
+      imageUrl = projRows[0].image_url;
+    } else {
+      // 1b. Fetch initiative details from MySQL to verify
+      const [initRows] = await pool.query('SELECT * FROM `initiatives` WHERE `id` = ?', [initiative_id]);
+      if (initRows.length === 0) {
+        return res.status(404).json({ error: 'Initiative not found.' });
+      }
+      title = initRows[0].title;
+      description = initRows[0].description || '';
+      imageUrl = initRows[0].image_url;
+    }
 
     // Unique reference to keep track of the transaction
     const transactionId = `tx-${Math.random().toString(36).substring(2, 11)}`;
@@ -768,10 +815,10 @@ app.post('/api/checkout/create-session', async (req, res) => {
       const payload = {
         items: [
           {
-            id: initiative.id,
-            title: initiative.title,
-            description: initiative.description ? initiative.description.substring(0, 255) : '',
-            picture_url: initiative.image_url,
+            id: project_id ? project_id : initiative_id,
+            title: title,
+            description: description ? description.substring(0, 255) : '',
+            picture_url: imageUrl,
             category_id: 'donations',
             quantity: 1,
             unit_price: value
@@ -785,13 +832,14 @@ app.post('/api/checkout/create-session', async (req, res) => {
           }
         },
         back_urls: {
-          success: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?gateway=mercadopago&success=true&pref_id=${transactionId}&init_id=${initiative_id}`,
-          failure: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?canceled=true`
+          success: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=mercadopago&success=true&pref_id=${transactionId}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
+          failure: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`
         },
         auto_return: 'approved',
         external_reference: transactionId,
         metadata: {
-          initiative_id,
+          initiative_id: initiative_id || null,
+          project_id: project_id || null,
           supporter_name: name,
           supporter_email: email,
           supporter_phone: phone,
@@ -828,9 +876,9 @@ app.post('/api/checkout/create-session', async (req, res) => {
             price_data: {
               currency: 'usd',
               product_data: {
-                name: initiative.title,
-                images: initiative.image_url ? [initiative.image_url] : [],
-                description: initiative.description ? initiative.description.substring(0, 255) : '',
+                name: title,
+                images: imageUrl ? [imageUrl] : [],
+                description: description ? description.substring(0, 255) : '',
               },
               unit_amount: Math.round(value * 100), // Stripe counts in cents
             },
@@ -838,11 +886,12 @@ app.post('/api/checkout/create-session', async (req, res) => {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?gateway=stripe&success=true&session_id={CHECKOUT_SESSION_ID}&init_id=${initiative_id}`,
-        cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}/action-hub?canceled=true`,
+        success_url: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=stripe&success=true&session_id={CHECKOUT_SESSION_ID}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
+        cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`,
         customer_email: email,
         metadata: {
-          initiative_id,
+          initiative_id: initiative_id || null,
+          project_id: project_id || null,
           supporter_name: name,
           supporter_email: email,
           supporter_phone: phone,
@@ -876,7 +925,8 @@ app.post('/api/checkout/verify-session', async (req, res) => {
     let supporterEmail = '';
     let supporterPhone = '';
     let notes = '';
-    let initiativeId = '';
+    let initiativeId = null;
+    let projectId = null;
     let transactionRef = '';
 
     if (gateway === 'stripe') {
@@ -893,7 +943,8 @@ app.post('/api/checkout/verify-session', async (req, res) => {
       supporterEmail = session.metadata.supporter_email;
       supporterPhone = session.metadata.supporter_phone;
       notes = session.metadata.additional_notes;
-      initiativeId = session.metadata.initiative_id;
+      initiativeId = session.metadata.initiative_id || null;
+      projectId = session.metadata.project_id || null;
       transactionRef = session.id;
     } else if (gateway === 'mercadopago') {
       console.log(`[VERIFY MP] Fetching payment details for ID: ${payment_id}`);
@@ -922,13 +973,14 @@ app.post('/api/checkout/verify-session', async (req, res) => {
       supporterEmail = mpData.metadata?.supporter_email || mpData.payer?.email || 'email@example.com';
       supporterPhone = mpData.metadata?.supporter_phone || mpData.payer?.phone?.number || '';
       notes = mpData.metadata?.additional_notes || '';
-      initiativeId = mpData.metadata?.initiative_id || '';
+      initiativeId = mpData.metadata?.initiative_id || null;
+      projectId = mpData.metadata?.project_id || null;
       transactionRef = payment_id.toString();
     } else {
       return res.status(400).json({ error: 'Invalid gateway specified.' });
     }
 
-    // 3. MySQL Transaction: Save contribution and increment raised amount on initiative safely
+    // 3. MySQL Transaction: Save contribution and increment raised amount safely
     dbConnection = await pool.getConnection();
     await dbConnection.beginTransaction();
 
@@ -941,20 +993,29 @@ app.post('/api/checkout/verify-session', async (req, res) => {
       
       // Already registered, return existing profile for receipt reproduction
       const [contributionRows] = await pool.query('SELECT * FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
-      const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      
+      let title = 'Missão Urgent';
+      if (initiativeId) {
+        const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+        title = initiativeRows[0]?.title || 'Ação Solidária';
+      } else if (projectId) {
+        const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
+        title = projectRows[0]?.name || 'Missão Urgente';
+      }
       
       return res.json({
         success: true,
         alreadyProcessed: true,
         contribution: contributionRows[0],
-        initiativeTitle: initiativeRows[0]?.title || 'Ação Solidária'
+        initiativeTitle: title
       });
     }
 
     const contributionId = `pledge-${Math.random().toString(36).substring(2, 11)}`;
     const contributionData = {
       id: contributionId,
-      initiative_id: initiativeId,
+      initiative_id: initiativeId || null,
+      project_id: projectId || null,
       pledge_amount: verifiedAmount,
       currency: currency,
       supporter_name: supporterName,
@@ -969,21 +1030,44 @@ app.post('/api/checkout/verify-session', async (req, res) => {
     // Insert contribution
     await dbConnection.query('INSERT INTO `contributions` SET ?', contributionData);
     
-    // Increment raised_amount of the specific initiative
-    await dbConnection.query(
-      'UPDATE `initiatives` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
-      [verifiedAmount, initiativeId]
-    );
+    // Increment raised_amount of the specific initiative or project
+    if (initiativeId) {
+      await dbConnection.query(
+        'UPDATE `initiatives` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+        [verifiedAmount, initiativeId]
+      );
+      
+      // Also update the parent project's raised_amount
+      const [initRows] = await dbConnection.query('SELECT project_id FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      if (initRows.length > 0 && initRows[0].project_id) {
+        await dbConnection.query(
+          'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+          [verifiedAmount, initRows[0].project_id]
+        );
+      }
+    } else if (projectId) {
+      await dbConnection.query(
+        'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+        [verifiedAmount, projectId]
+      );
+    }
 
     await dbConnection.commit();
     console.log(`[VERIFY SUCCESS] Contribution successfully registered: ${contributionId}`);
 
-    const [initRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+    let title = 'Missão Urgent';
+    if (initiativeId) {
+      const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      title = initiativeRows[0]?.title || 'Ação Solidária';
+    } else if (projectId) {
+      const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
+      title = projectRows[0]?.name || 'Missão Urgente';
+    }
 
     res.json({
       success: true,
       contribution: contributionData,
-      initiativeTitle: initRows[0]?.title || 'Ação Solidária'
+      initiativeTitle: title
     });
   } catch (err) {
     if (dbConnection) await dbConnection.rollback();
@@ -1008,12 +1092,15 @@ app.get('/api/contributions', async (req, res) => {
       return res.status(403).json({ error: 'Administrative privileges required.' });
     }
 
-    // Join with initiatives to display the title
+    // Join with initiatives and projects to display the correct titles
     const [rows] = await pool.query(`
-      SELECT c.*, i.title as initiative_title, p.name as project_name
+      SELECT c.*, 
+             i.title as initiative_title, 
+             COALESCE(p_direct.name, p_init.name) as project_name
       FROM \`contributions\` c
       LEFT JOIN \`initiatives\` i ON c.initiative_id = i.id
-      LEFT JOIN \`projects\` p ON i.project_id = p.id
+      LEFT JOIN \`projects\` p_init ON i.project_id = p_init.id
+      LEFT JOIN \`projects\` p_direct ON c.project_id = p_direct.id
       ORDER BY c.created_at DESC
     `);
 

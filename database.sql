@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `contributions` (
   `id` VARCHAR(255) NOT NULL,
-  `initiative_id` VARCHAR(255) NOT NULL,
+  `initiative_id` VARCHAR(255) NULL,
+  `project_id` VARCHAR(255) NULL,
   `pledge_amount` DECIMAL(10, 2) NOT NULL,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'BRL',
   `supporter_name` VARCHAR(255) NOT NULL,
@@ -82,7 +83,8 @@ CREATE TABLE IF NOT EXISTS `contributions` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX idx_transaction_ref (`transaction_reference`),
-  FOREIGN KEY (`initiative_id`) REFERENCES `initiatives`(`id`) ON DELETE CASCADE
+  FOREIGN KEY (`initiative_id`) REFERENCES `initiatives`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
