@@ -33,7 +33,6 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
           <img src={logoUrl} alt="Building Bridges" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 hover:scale-105" />
-          <span className="text-lg sm:text-xl font-black tracking-tight text-primary uppercase truncate max-w-[120px] sm:max-w-none">Building Bridges</span>
         </Link>
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map(link => (
@@ -173,7 +172,6 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
           <img src={logoUrl} alt="Building Bridges" className="h-8 w-auto object-contain grayscale" />
-          <span className="text-lg font-black tracking-tight text-primary uppercase">Building Bridges</span>
         </div>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
           <Link to="/privacy" className="text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase">{t('footer.privacy')}</Link>
