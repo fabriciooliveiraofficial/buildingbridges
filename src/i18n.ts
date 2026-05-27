@@ -11,7 +11,8 @@ const resources = {
         "impact": "Our Impact",
         "transparency": "Transparency",
         "actionHub": "Action Hub",
-        "donate": "DONATE NOW"
+        "donate": "DONATE NOW",
+        "admin": "Admin Panel"
       },
       "hero": {
         "live": "Live Relief Active",
@@ -204,7 +205,8 @@ const resources = {
         "impact": "Nosso Impacto",
         "transparency": "Transparência",
         "actionHub": "Hub de Ação",
-        "donate": "DOE AGORA"
+        "donate": "DOE AGORA",
+        "admin": "Painel Admin"
       },
       "hero": {
         "live": "Ajuda ao Vivo Ativa",
@@ -397,7 +399,8 @@ const resources = {
         "impact": "Nuestro Impacto",
         "transparency": "Transparencia",
         "actionHub": "Hub de Acción",
-        "donate": "DONA AHORA"
+        "donate": "DONA AHORA",
+        "admin": "Panel Admin"
       },
       "hero": {
         "live": "Ayuda en Vivo Activa",

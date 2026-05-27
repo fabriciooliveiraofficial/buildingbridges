@@ -71,6 +71,13 @@ export const Header: React.FC = () => {
 
           {user ? (
             <div className="flex items-center gap-3 pl-4 border-l border-primary/10">
+              <Link 
+                to="/admin" 
+                className="size-10 bg-primary/5 hover:bg-primary/10 text-primary rounded-full flex items-center justify-center transition-colors"
+                title={t('nav.admin') || 'Admin'}
+              >
+                <span className="material-symbols-outlined">dashboard</span>
+              </Link>
               <div className="hidden lg:block text-right">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Staff Access</p>
                 <p className="text-sm font-bold text-primary line-clamp-1 max-w-[100px]">{profile?.displayName || user.email}</p>
@@ -149,13 +156,23 @@ export const Header: React.FC = () => {
                 {t('nav.donate')}
               </Link>
               {user && (
-                <button 
-                  onClick={handleLogout}
-                  className="w-full text-left flex items-center gap-3 text-red-500 font-bold py-4"
-                >
-                  <span className="material-symbols-outlined">logout</span>
-                  Sign Out
-                </button>
+                <>
+                  <Link 
+                    to="/admin"
+                    className="block w-full text-left flex items-center gap-3 text-primary font-bold py-4 border-t border-primary/5"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="material-symbols-outlined">dashboard</span>
+                    {t('nav.admin') || 'Admin'}
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left flex items-center gap-3 text-red-500 font-bold py-4 border-t border-primary/5"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                    Sign Out
+                  </button>
+                </>
               )}
             </div>
           </motion.div>
