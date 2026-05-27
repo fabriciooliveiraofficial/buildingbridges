@@ -158,14 +158,19 @@ function slugify(text) {
 async function initializeDatabase() {
   try {
     // Attempt connecting to the server first without database to create it if missing (for local testing)
-    const initConnection = await mysql.createConnection({
-      host: dbConfig.host,
-      user: dbConfig.user,
-      password: dbConfig.password
-    });
-    
-    await initConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    await initConnection.end();
+    try {
+      const initConnection = await mysql.createConnection({
+        host: dbConfig.host,
+        user: dbConfig.user,
+        password: dbConfig.password
+      });
+      
+      await initConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      await initConnection.end();
+      console.log('Database verified/created successfully.');
+    } catch (dbCreateError) {
+      console.log('Skipping initial DB creation (normal for production platforms like Hostinger where the DB already exists).');
+    }
 
     // Now establish connection pool with the specific database
     pool = mysql.createPool(dbConfig);
