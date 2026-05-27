@@ -73,10 +73,11 @@ export const Header: React.FC = () => {
             <div className="flex items-center gap-3 pl-4 border-l border-primary/10">
               <Link 
                 to="/admin" 
-                className="size-10 bg-primary/5 hover:bg-primary/10 text-primary rounded-full flex items-center justify-center transition-colors"
+                className="bg-primary/5 hover:bg-primary/10 text-primary rounded-full flex items-center justify-center transition-colors px-4 py-2 gap-2"
                 title={t('nav.admin') || 'Admin'}
               >
                 <span className="material-symbols-outlined">dashboard</span>
+                <span className="font-bold text-sm hidden lg:block">{t('nav.admin') || 'Admin'}</span>
               </Link>
               <div className="hidden lg:block text-right">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Staff Access</p>
