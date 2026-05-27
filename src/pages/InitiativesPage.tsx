@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
+import logoUrl from '../assets/logo_building_bridges.png';
 
 interface Initiative {
   id: string;
@@ -698,9 +699,7 @@ export const InitiativesPage: React.FC = () => {
               <div className="space-y-8 print:p-8">
                 {/* Header Logo */}
                 <div className="text-center pb-6 border-b-2 border-dashed border-slate-200">
-                  <div className="inline-flex size-14 bg-primary text-white rounded-2xl items-center justify-center mb-4">
-                    <span className="material-symbols-outlined text-3xl">corporate_fare</span>
-                  </div>
+                  <img src={logoUrl} alt="Building Bridges Logo" className="h-16 w-auto mx-auto mb-4 object-contain" />
                   <h3 className="text-2xl font-black text-primary uppercase tracking-tight">Building Bridges</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Recibo de Apoio Humanitário</p>
                 </div>

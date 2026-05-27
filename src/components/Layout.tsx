@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../contexts/CurrencyContext';
+import logoUrl from '../assets/logo_building_bridges.png';
 
 export const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -31,9 +32,7 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-primary/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="size-8 sm:size-10 bg-primary rounded flex items-center justify-center text-white shrink-0">
-            <span className="material-symbols-outlined text-2xl sm:text-3xl">corporate_fare</span>
-          </div>
+          <img src={logoUrl} alt="Building Bridges" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 hover:scale-105" />
           <span className="text-lg sm:text-xl font-black tracking-tight text-primary uppercase truncate max-w-[120px] sm:max-w-none">Building Bridges</span>
         </Link>
         <nav className="hidden md:flex items-center gap-8">
@@ -172,10 +171,8 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-background-light py-12 border-t border-primary/5">
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-3 grayscale">
-          <div className="size-8 bg-primary rounded flex items-center justify-center text-white">
-            <span className="material-symbols-outlined text-xl">corporate_fare</span>
-          </div>
+        <div className="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+          <img src={logoUrl} alt="Building Bridges" className="h-8 w-auto object-contain grayscale" />
           <span className="text-lg font-black tracking-tight text-primary uppercase">Building Bridges</span>
         </div>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
