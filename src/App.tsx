@@ -24,6 +24,7 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import { RegisterPage } from './pages/Auth/RegisterPage';
 import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
 import { InitiativesPage } from './pages/InitiativesPage';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 export default function App() {
   return (
@@ -32,7 +33,8 @@ export default function App() {
         <CurrencyProvider>
           <BrowserRouter>
             <Layout>
-            <Routes>
+              <PWAInstallPrompt />
+              <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/action-hub" element={<InitiativesPage />} />
