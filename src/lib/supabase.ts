@@ -119,7 +119,16 @@ class MockSupabaseClient {
             url = `${baseUrl}?limit=${limitVal}`;
           }
 
-          const response = await fetch(url);
+          // Add cache-busting parameter to bypass aggressive Hostinger/LiteSpeed cache
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}t=${Date.now()}`;
+
+          const response = await fetch(url, {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
           if (!response.ok) {
             const errData = await response.json();
             return resolve({ data: null, error: new Error(errData.error || 'Failed to fetch data') });

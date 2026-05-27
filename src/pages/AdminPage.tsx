@@ -64,9 +64,11 @@ export const AdminPage: React.FC = () => {
     setPledgesLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/contributions', {
+      const response = await fetch(`/api/contributions?t=${Date.now()}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
       const data = await response.json();
@@ -86,7 +88,12 @@ export const AdminPage: React.FC = () => {
   const fetchMissions = async () => {
     setMissionsLoading(true);
     try {
-      const response = await fetch('/api/projects');
+      const response = await fetch(`/api/projects?t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setMissionsList(data);
@@ -106,7 +113,12 @@ export const AdminPage: React.FC = () => {
   const fetchInitiatives = async () => {
     setInitiativesLoading(true);
     try {
-      const response = await fetch('/api/initiatives?all=true');
+      const response = await fetch(`/api/initiatives?all=true&t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setInitiativeList(data);
