@@ -28,8 +28,8 @@ export const SEO: React.FC<SEOProps> = ({
   const { t, i18n } = useTranslation();
 
   // Determine localized title and description
-  const pageTitle = titleKey ? t(`seo.${titleKey}`) : fallbackTitle || 'Building Bridges | Touching Nations, Changing Lives';
-  const pageDescription = descriptionKey ? t(`seo.${descriptionKey}`) : fallbackDescription || 'Humanitarian foundation dedicated to bringing aid to families in need, disaster-stricken cities, and vulnerable individuals.';
+  const pageTitle = titleKey ? t(`seo.${titleKey}.title`) : fallbackTitle || 'Building Bridges | Touching Nations, Changing Lives';
+  const pageDescription = descriptionKey ? t(`seo.${descriptionKey}.description`) : fallbackDescription || 'Humanitarian foundation dedicated to bringing aid to families in need, disaster-stricken cities, and vulnerable individuals.';
 
   // Default Schema.org JSON-LD for Organization / NGO
   const defaultSchema = {
