@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export const AdminPage: React.FC = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [isReadingFile, setIsReadingFile] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
   // Console state: 'mission', 'initiative', or 'pledges'
@@ -178,34 +179,27 @@ export const AdminPage: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      setIsReadingFile(true);
       
-      // Clear manual URL fields
-      if (activeConsole === 'mission') {
-        setFormData(prev => ({ ...prev, image_url: '' }));
-      } else {
-        setInitiativeData(prev => ({ ...prev, image_url: '' }));
-      }
+      // Convert to Base64 immediately in the frontend!
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        
+        if (activeConsole === 'mission') {
+          setFormData(prev => ({ ...prev, image_url: base64String }));
+        } else {
+          setInitiativeData(prev => ({ ...prev, image_url: base64String }));
+        }
+        setIsReadingFile(false);
+      };
+      reader.onerror = () => {
+        setIsReadingFile(false);
+        setMessage({ type: 'error', text: 'Erro ao processar arquivo de imagem.' });
+      };
+      reader.readAsDataURL(file);
     }
-  };
-
-  // Reusable Base64 Image Uploader via /api/upload endpoint
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error || 'Falha ao converter imagem para Base64.');
-    }
-
-    const resData = await response.json();
-    return resData.publicUrl; // Returns a persistent Base64 Data URI
   };
 
   // Switch to creation mode
@@ -337,12 +331,7 @@ export const AdminPage: React.FC = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      let finalImageUrl = activeConsole === 'mission' ? formData.image_url : initiativeData.image_url;
-
-      if (imageFile) {
-        setMessage({ type: 'info', text: 'Convertendo e otimizando imagem...' });
-        finalImageUrl = await uploadImage(imageFile);
-      }
+      const finalImageUrl = activeConsole === 'mission' ? formData.image_url : initiativeData.image_url;
 
       if (activeConsole === 'mission') {
         // ================== PROCESS MISSION (PROJECT) ==================
@@ -983,12 +972,12 @@ export const AdminPage: React.FC = () => {
 
             {/* Submit Button */}
             <button 
-              disabled={loading}
+              disabled={loading || isReadingFile}
               type="submit" 
               className="w-full bg-accent hover:bg-orange-600 text-white py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-accent/20 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? 'Salvando...' : editingId ? 'Salvar Alterações' : activeConsole === 'mission' ? 'Publicar Missão' : 'Registrar Iniciativa'}
-              {!loading && <span className="material-symbols-outlined">save</span>}
+              {loading ? 'Salvando...' : isReadingFile ? 'Processando imagem...' : editingId ? 'Salvar Alterações' : activeConsole === 'mission' ? 'Publicar Missão' : 'Registrar Iniciativa'}
+              {!loading && !isReadingFile && <span className="material-symbols-outlined">save</span>}
             </button>
           </form>
         </div>
