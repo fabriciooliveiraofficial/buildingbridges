@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /projects
+Allow: /action-hub
+Allow: /transparency
+Allow: /impact
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+
+Sitemap: https://buildingbridgesbrusa.org/sitemap.xml

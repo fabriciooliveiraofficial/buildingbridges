@@ -5,6 +5,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import logoUrl from '../assets/logo_building_bridges.png';
+import { SEO } from '../components/SEO';
 
 export const ImpactPage: React.FC = () => {
   const { t } = useTranslation();
@@ -231,6 +232,13 @@ export const ImpactPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <SEO 
+        titleKey={project ? undefined : "impact"}
+        descriptionKey={project ? undefined : "impact"}
+        fallbackTitle={project ? `${project.name} | Impact | Building Bridges` : undefined}
+        fallbackDescription={project ? project.description : undefined}
+        image={project ? project.image_url : undefined}
+      />
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
         <Link className="hover:text-primary" to="/">{t('nav.home')}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>

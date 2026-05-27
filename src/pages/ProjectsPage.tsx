@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ProjectCard } from '../components/ProjectCard';
 import { useTranslation } from 'react-i18next';
+import { SEO } from '../components/SEO';
 
 export const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -75,6 +76,7 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+      <SEO titleKey="projects" descriptionKey="projects" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-primary mb-2">{t('projects.title')}</h1>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { supabase } from '../lib/supabase';
+import { SEO } from '../components/SEO';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +51,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="flex flex-col">
+      <SEO titleKey="home" descriptionKey="home" />
       {/* Hero Section */}
       <section className="relative min-h-[600px] lg:min-h-[800px] flex items-center pt-24 lg:pt-20 pb-20 lg:pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">

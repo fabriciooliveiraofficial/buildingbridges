@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { Layout } from './components/Layout';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -26,10 +27,11 @@ import { InitiativesPage } from './pages/InitiativesPage';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CurrencyProvider>
-        <BrowserRouter>
-          <Layout>
+    <HelmetProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <BrowserRouter>
+            <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/projects" element={<ProjectsPage />} />
@@ -58,5 +60,6 @@ export default function App() {
         </BrowserRouter>
       </CurrencyProvider>
     </AuthProvider>
+    </HelmetProvider>
   );
 }

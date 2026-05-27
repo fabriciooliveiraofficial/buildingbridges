@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SEO } from '../components/SEO';
 
 export const ContactPage: React.FC = () => {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-20">
+      <SEO titleKey="contact" descriptionKey="contact" />
       <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-8">{t('footer.contact')}</h1>
       <p className="text-slate-600 dark:text-slate-400 text-lg mb-12">
         Have questions about our missions or how you can help? We'd love to hear from you.

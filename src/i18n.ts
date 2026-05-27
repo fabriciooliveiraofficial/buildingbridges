@@ -167,6 +167,32 @@ const resources = {
         "sendingRequest": "Sending Request...",
         "backToLogin": "Back to Login",
         "resetSuccess": "Password reset email sent! Check your inbox."
+      },
+      "seo": {
+        "home": {
+          "title": "Building Bridges | Touching Nations, Changing Lives",
+          "description": "Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals. Rebuilding cities, bridging nations."
+        },
+        "projects": {
+          "title": "Humanitarian Projects | Building Bridges",
+          "description": "Explore our active and completed humanitarian projects. Your donation provides transparent disaster relief in real-time."
+        },
+        "initiatives": {
+          "title": "Action Hub & Urgent Missions | Building Bridges",
+          "description": "Find out where we are acting right now. Urgent humanitarian response campaigns in Brazil and the United States."
+        },
+        "transparency": {
+          "title": "Real-time Transparency Ledger | Building Bridges",
+          "description": "Track every donation dollar with fintech-grade visibility. Rebuilding cities and bridging nations through 100% transparency."
+        },
+        "impact": {
+          "title": "Our Social Impact | Building Bridges",
+          "description": "See the direct, verified results of our disaster relief campaigns. Real-time updates, metrics, and case studies of lives changed."
+        },
+        "contact": {
+          "title": "Contact Us | Building Bridges",
+          "description": "Get in touch with our humanitarian coordination team in the US and Brazil. Let's build bridges of hope together."
+        }
       }
     }
   },
@@ -334,6 +360,32 @@ const resources = {
         "sendingRequest": "Enviando Solicitação...",
         "backToLogin": "Voltar para o Login",
         "resetSuccess": "E-mail de redefinição de senha enviado! Verifique sua caixa de entrada."
+      },
+      "seo": {
+        "home": {
+          "title": "Building Bridges | Alcançando Nações, Tocando Vidas",
+          "description": "Ajuda humanitária para catástrofes e suporte a famílias em necessidade, cidades atingidas e indivíduos vulneráveis. Reconstruindo cidades, unindo nações."
+        },
+        "projects": {
+          "title": "Projetos Humanitários | Building Bridges",
+          "description": "Explore nossas missões humanitárias ativas e concluídas. Sua doação apoia a reconstrução de cidades e o alívio transparente de desastres."
+        },
+        "initiatives": {
+          "title": "Hub de Ação e Missões Urgentes | Building Bridges",
+          "description": "Descubra nossas respostas ativas a crises humanitárias e desastres naturais no Brasil e nos Estados Unidos. Faça a diferença."
+        },
+        "transparency": {
+          "title": "Transparência em Tempo Real | Building Bridges",
+          "description": "Acompanhe cada centavo doado através do nosso livro de transações financeiras estilo fintech. Transparência de ponta a ponta."
+        },
+        "impact": {
+          "title": "Nosso Impacto Social | Building Bridges",
+          "description": "Veja os resultados reais e verificados das nossas ações. Histórias reais, dados de conversão e vidas impactadas pela sua ajuda."
+        },
+        "contact": {
+          "title": "Fale Conosco | Building Bridges",
+          "description": "Entre em contato com a equipe de coordenação humanitária no Brasil e nos EUA. Juntos, construímos pontes de esperança."
+        }
       }
     }
   },
@@ -497,10 +549,36 @@ const resources = {
         "loginHere": "Inicie sesión aquí",
         "recovery": "Recuperación",
         "resetPassword": "Restablezca la contraseña de su cuenta",
-        "sendReset": "Enviar Enlace de Restablecimiento",
+        "sendReset": "Enviar Enlace de Redefiniamiento",
         "sendingRequest": "Enviando Solicitud...",
-        "backToLogin": "Volver al Inicio de Sesión",
-        "resetSuccess": "¡Correo electrónico de restablecimiento enviado! Revise su bandeja de entrada."
+        "backToLogin": "Voltar al Inicio de Sesión",
+        "resetSuccess": "¡Correo electrónico de reestablecimiento enviado! Revise su bandeja de entrada."
+      },
+      "seo": {
+        "home": {
+          "title": "Building Bridges | Alcanzando Naciones, Tocando Vidas",
+          "description": "Ayuda humanitaria para desastres y apoyo a familias necesitadas, ciudades afectadas e individuos vulnerables. Reconstruyendo ciudades, uniendo naciones."
+        },
+        "projects": {
+          "title": "Proyectos Humanitarios | Building Bridges",
+          "description": "Explore nuestras misiones humanitarias activas y completadas. Su donación apoya la reconstrucción de ciudades y el alivio transparente de desastres."
+        },
+        "initiatives": {
+          "title": "Hub de Acción y Misiones Urgentes | Building Bridges",
+          "description": "Descubra nuestras respuestas activas a crisis humanitarias y desastres naturales en Brasil y Estados Unidos. Marque la diferencia hoy."
+        },
+        "transparency": {
+          "title": "Transparencia en Tiempo Real | Building Bridges",
+          "description": "Siga cada centavo donado a través de nuestro libro de transacciones financieras estilo fintech. Transparencia de extremo a extremo."
+        },
+        "impact": {
+          "title": "Nuestro Impacto Social | Building Bridges",
+          "description": "Vea los resultados reales y verificados de nuestras acciones. Historias reales, datos de conversión y vidas impactadas por su ayuda."
+        },
+        "contact": {
+          "title": "Contáctenos | Building Bridges",
+          "description": "Póngase en contacto con el equipo de coordinación humanitaria en Brasil y EE. UU. Juntos, construimos puentes de esperanza."
+        }
       }
     }
   }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import logoUrl from '../assets/logo_building_bridges.png';
+import { SEO } from '../components/SEO';
 
 interface Initiative {
   id: string;
@@ -220,6 +221,7 @@ export const InitiativesPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-16">
+      <SEO titleKey="initiatives" descriptionKey="initiatives" />
       {/* Page Header */}
       <div className="max-w-3xl mx-auto text-center mb-16 space-y-6">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent font-black text-xs uppercase tracking-widest">

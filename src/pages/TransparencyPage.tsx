@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FundFlowChart } from '../components/FundFlowChart';
+import { SEO } from '../components/SEO';
 
 export const TransparencyPage: React.FC = () => {
   const { t } = useTranslation();
@@ -11,6 +12,7 @@ export const TransparencyPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 lg:px-40 py-10">
+      <SEO titleKey="transparency" descriptionKey="transparency" />
       <nav className="flex items-center gap-2 mb-8 text-sm font-medium text-slate-500 dark:text-slate-400">
         <Link className="hover:text-primary" to="/">{t('nav.home')}</Link>
         <span className="material-symbols-outlined text-xs">chevron_right</span>
