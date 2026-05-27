@@ -56,6 +56,56 @@ class MockSupabaseClient {
           return { data: null, error };
         }
       },
+      update: async (updatedData: any) => {
+        try {
+          if (!eqField || eqField !== 'id' || !eqValue) {
+            throw new Error(`Update query in Mock client requires .eq('id', value) first.`);
+          }
+          
+          const url = `${baseUrl}/${encodeURIComponent(eqValue)}`;
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedData)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            return { data: null, error: new Error(errData.error || `Failed to update in ${table}`) };
+          }
+
+          const resData = await response.json();
+          const returnedItem = table === 'projects' ? resData.project : resData.initiative;
+          return { data: returnedItem, error: null };
+        } catch (error: any) {
+          console.error(`API Error in update to ${table}:`, error);
+          return { data: null, error };
+        }
+      },
+      delete: async () => {
+        try {
+          if (!eqField || eqField !== 'id' || !eqValue) {
+            throw new Error(`Delete query in Mock client requires .eq('id', value) first.`);
+          }
+          
+          const url = `${baseUrl}/${encodeURIComponent(eqValue)}`;
+          const response = await fetch(url, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            return { data: null, error: new Error(errData.error || `Failed to delete from ${table}`) };
+          }
+
+          return { data: { success: true }, error: null };
+        } catch (error: any) {
+          console.error(`API Error in delete from ${table}:`, error);
+          return { data: null, error };
+        }
+      },
       // Support Promise chaining/awaiting directly on the builder
       then: async (resolve: any, reject: any) => {
         try {

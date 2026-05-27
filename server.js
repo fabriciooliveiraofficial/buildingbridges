@@ -171,7 +171,7 @@ async function initializeDatabase() {
     pool = mysql.createPool(dbConfig);
     console.log('Connected to MySQL connection pool successfully.');
 
-    // Create the 'projects' table if it does not exist
+    // Create the 'projects' table if it does not exist (image_url changed to LONGTEXT for Base64 support)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS \`projects\` (
         \`id\` VARCHAR(255) NOT NULL,
@@ -179,7 +179,7 @@ async function initializeDatabase() {
         \`description\` TEXT NULL,
         \`goal_amount\` DECIMAL(15, 2) NOT NULL,
         \`raised_amount\` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
-        \`image_url\` VARCHAR(512) NULL,
+        \`image_url\` LONGTEXT NULL,
         \`status\` VARCHAR(50) NOT NULL DEFAULT 'active',
         \`category\` VARCHAR(100) NULL,
         \`long_description\` TEXT NULL,
@@ -190,7 +190,7 @@ async function initializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Create the 'initiatives' table if it does not exist
+    // Create the 'initiatives' table if it does not exist (image_url changed to LONGTEXT for Base64 support)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS \`initiatives\` (
         \`id\` VARCHAR(255) NOT NULL,
@@ -200,7 +200,7 @@ async function initializeDatabase() {
         \`description\` TEXT NOT NULL,
         \`suggested_price\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         \`impact_description\` VARCHAR(255) NOT NULL,
-        \`image_url\` VARCHAR(512) NULL,
+        \`image_url\` LONGTEXT NULL,
         \`goal_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         \`raised_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         \`status\` VARCHAR(50) NOT NULL DEFAULT 'active',
@@ -279,6 +279,28 @@ async function initializeDatabase() {
     }
     
     console.log('Database tables verified.');
+
+    // Verify and alter projects & initiatives tables to support LONGTEXT for image_url (for Base64 support on Hostinger)
+    try {
+      console.log('Verifying column types for Base64 image support...');
+      // 1. Projects table
+      const [projColumns] = await pool.query('SHOW COLUMNS FROM `projects` LIKE "image_url"');
+      if (projColumns.length > 0 && projColumns[0].Type.toLowerCase() !== 'longtext') {
+        console.log('Altering projects table to support LONGTEXT image_url...');
+        await pool.query('ALTER TABLE `projects` MODIFY `image_url` LONGTEXT NULL');
+        console.log('projects table altered successfully.');
+      }
+      
+      // 2. Initiatives table
+      const [initColumns] = await pool.query('SHOW COLUMNS FROM `initiatives` LIKE "image_url"');
+      if (initColumns.length > 0 && initColumns[0].Type.toLowerCase() !== 'longtext') {
+        console.log('Altering initiatives table to support LONGTEXT image_url...');
+        await pool.query('ALTER TABLE `initiatives` MODIFY `image_url` LONGTEXT NULL');
+        console.log('initiatives table altered successfully.');
+      }
+    } catch (err) {
+      console.error('Failed to dynamically modify image_url columns:', err.message);
+    }
 
     // Seed default projects if the database is empty
     const [rows] = await pool.query('SELECT COUNT(*) as count FROM `projects`');
@@ -518,35 +540,99 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
-// POST /api/upload - Handle file upload and return its public URL path
+// PUT /api/projects/:id - Update an existing project (Admin only)
+app.put('/api/projects/:id', async (req, res) => {
+  try {
+    const { name, description, goal_amount, image_url, status, category, long_description, budget_json } = req.body;
+    
+    if (!name || !goal_amount) {
+      return res.status(400).json({ error: 'Name and goal_amount are required fields.' });
+    }
+
+    const projectData = {
+      name,
+      description: description || null,
+      goal_amount: parseFloat(goal_amount),
+      image_url: image_url || null,
+      status: status || 'active',
+      category: category || null,
+      long_description: long_description || null,
+      budget_json: budget_json ? JSON.stringify(budget_json) : null
+    };
+
+    await pool.query(
+      'UPDATE `projects` SET ? WHERE `id` = ?',
+      [projectData, req.params.id]
+    );
+
+    console.log(`Project updated successfully: ${req.params.id}`);
+    res.json({ success: true, project: { id: req.params.id, ...projectData, budget_json } });
+  } catch (err) {
+    console.error('API Error PUT /api/projects/:id:', err);
+    res.status(500).json({ error: 'Database error updating project' });
+  }
+});
+
+// DELETE /api/projects/:id - Delete a project (Admin only)
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM `projects` WHERE `id` = ?', [req.params.id]);
+    console.log(`Project deleted successfully: ${req.params.id}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('API Error DELETE /api/projects/:id:', err);
+    res.status(500).json({ error: 'Database error deleting project' });
+  }
+});
+
+// POST /api/upload - Handle file upload and return its public URL path (converts to Base64 for Hostinger persistence)
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
     
-    // Return relative url path that is compatible with both dev proxy and direct hosting
-    const publicUrl = `/uploads/${req.file.filename}`;
-    console.log(`Image uploaded successfully: ${publicUrl}`);
-    res.json({ publicUrl });
+    // Read local uploaded file to Buffer
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const base64Data = fileBuffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    
+    // Construct base64 Data URI
+    const dataUri = `data:${mimeType};base64,${base64Data}`;
+    
+    // Delete local temporary file from disk immediately to save space on Hostinger
+    fs.unlinkSync(req.file.path);
+    
+    console.log(`Image uploaded and converted to Base64 successfully (${req.file.size} bytes).`);
+    res.json({ publicUrl: dataUri });
   } catch (err) {
     console.error('Upload Error:', err);
-    res.status(500).json({ error: err.message || 'Error uploading file.' });
+    res.status(500).json({ error: err.message || 'Error processing file.' });
   }
 });
 
-// GET /api/initiatives - Retrieve all active initiatives, optionally filtered by project_id
+// GET /api/initiatives - Retrieve all initiatives, optionally filtered by project_id (with admin support for all=true)
 app.get('/api/initiatives', async (req, res) => {
   try {
     const projectId = req.query.project_id;
+    const showAll = req.query.all === 'true';
     let rows;
     
+    let query = 'SELECT * FROM `initiatives`';
+    const params = [];
+    
     if (projectId) {
-      [rows] = await pool.query('SELECT * FROM `initiatives` WHERE `project_id` = ? AND `status` = "active" ORDER BY `created_at` DESC', [projectId]);
-    } else {
-      [rows] = await pool.query('SELECT * FROM `initiatives` WHERE `status` = "active" ORDER BY `created_at` DESC');
+      query += ' WHERE `project_id` = ?';
+      params.push(projectId);
+      if (!showAll) {
+        query += ' AND `status` = "active"';
+      }
+    } else if (!showAll) {
+      query += ' WHERE `status` = "active"';
     }
     
+    query += ' ORDER BY `created_at` DESC';
+    [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error('API Error /api/initiatives:', err);
@@ -605,6 +691,52 @@ app.post('/api/initiatives', async (req, res) => {
   } catch (err) {
     console.error('API Error POST /api/initiatives:', err);
     res.status(500).json({ error: 'Database error creating initiative' });
+  }
+});
+
+// PUT /api/initiatives/:id - Update an existing solidarity initiative (Admin only)
+app.put('/api/initiatives/:id', async (req, res) => {
+  try {
+    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, status } = req.body;
+    
+    if (!project_id || !title || !type || !suggested_price || !impact_description) {
+      return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    const initiativeData = {
+      project_id,
+      title,
+      type,
+      description: description || '',
+      suggested_price: parseFloat(suggested_price),
+      impact_description,
+      image_url: image_url || null,
+      goal_amount: parseFloat(goal_amount || 0),
+      status: status || 'active'
+    };
+
+    await pool.query(
+      'UPDATE `initiatives` SET ? WHERE `id` = ?',
+      [initiativeData, req.params.id]
+    );
+
+    console.log(`Initiative updated successfully: ${req.params.id}`);
+    res.json({ success: true, initiative: { id: req.params.id, ...initiativeData } });
+  } catch (err) {
+    console.error('API Error PUT /api/initiatives/:id:', err);
+    res.status(500).json({ error: 'Database error updating initiative' });
+  }
+});
+
+// DELETE /api/initiatives/:id - Delete an initiative (Admin only)
+app.delete('/api/initiatives/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM `initiatives` WHERE `id` = ?', [req.params.id]);
+    console.log(`Initiative deleted successfully: ${req.params.id}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('API Error DELETE /api/initiatives/:id:', err);
+    res.status(500).json({ error: 'Database error deleting initiative' });
   }
 });
 
