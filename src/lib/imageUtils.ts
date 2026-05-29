@@ -9,6 +9,12 @@
 export const parseImages = (imageUrl: string | null | undefined): string[] => {
   if (!imageUrl) return [];
   const trimmed = imageUrl.trim();
+  
+  // If it's a base64 string, return it directly to avoid split errors
+  if (trimmed.startsWith('data:')) {
+    return [trimmed];
+  }
+
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     try {
       const parsed = JSON.parse(trimmed);

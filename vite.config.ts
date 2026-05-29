@@ -12,6 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        manifestFilename: 'manifest.json',
         includeAssets: ['logo_building_bridges.png', 'robots.txt', 'sitemap.xml'],
         manifest: {
           name: 'Building Bridges Foundation',
