@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
+import { parseImages } from '../lib/imageUtils';
+import { Lightbox } from '../components/Lightbox';
 
 export const ImpactPage: React.FC = () => {
   const { t } = useTranslation();
@@ -14,6 +16,10 @@ export const ImpactPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'story' | 'budget' | 'updates'>('story');
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState('');
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Modal & Checkout State
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -227,6 +233,8 @@ export const ImpactPage: React.FC = () => {
   if (loading) return <div className="p-20 text-center font-bold text-slate-500">{t('projects.loading')}</div>;
   if (!project) return <div className="p-20 text-center font-bold text-red-500">{t('impact.notfound')}</div>;
 
+  const projectImages = parseImages(project.image_url);
+  const mainImage = projectImages[0] || 'https://picsum.photos/seed/charity-hero/1200/800';
   const progress = project.goal_amount ? Math.min((project.raised_amount / project.goal_amount) * 100, 100) : 0;
   const { t1, t2, t3 } = getContributionValues();
 
@@ -237,7 +245,7 @@ export const ImpactPage: React.FC = () => {
         descriptionKey={project ? undefined : "impact"}
         fallbackTitle={project ? `${project.name} | Impact | Building Bridges` : undefined}
         fallbackDescription={project ? project.description : undefined}
-        image={project ? project.image_url : undefined}
+        image={mainImage}
       />
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
         <Link className="hover:text-primary" to="/">{t('nav.home')}</Link>
@@ -247,15 +255,27 @@ export const ImpactPage: React.FC = () => {
         <span className="text-slate-900 dark:text-slate-200 font-medium">{project.name}</span>
       </nav>
 
-      <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/6] rounded-xl overflow-hidden mb-10 shadow-2xl group">
+      <div 
+        onClick={() => {
+          setLightboxImages(projectImages.length > 0 ? projectImages : [mainImage]);
+          setLightboxTitle(project.name);
+          setLightboxIndex(0);
+          setLightboxOpen(true);
+        }}
+        className="relative w-full aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/6] rounded-xl overflow-hidden mb-10 shadow-2xl group cursor-pointer"
+      >
         <img 
           alt={project.name} 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-          src={project.image_url || 'https://picsum.photos/seed/charity-hero/1200/800'} 
+          src={mainImage} 
           referrerPolicy="no-referrer" 
           onError={handleImageError}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-8 lg:p-12">
+        {/* Premium Hover Zoom Overlay with photo_library icon */}
+        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <span className="material-symbols-outlined text-white text-4xl scale-90 group-hover:scale-100 transition-transform duration-300">photo_library</span>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-8 lg:p-12 z-10 pointer-events-none">
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">{t('missions.active')}</span>
             <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">Brazil & USA</span>
@@ -293,6 +313,35 @@ export const ImpactPage: React.FC = () => {
                 <p className="text-base sm:text-lg md:text-xl leading-relaxed text-slate-700 dark:text-slate-300 font-normal md:font-light">
                   {project.long_description || project.description}
                 </p>
+                
+                {projectImages.length > 1 && (
+                  <div className="space-y-6 my-10 border-t border-slate-100 dark:border-slate-800 pt-8">
+                    <h4 className="text-xl font-black text-primary dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
+                      <span className="material-symbols-outlined text-accent">collections</span>
+                      Galeria de Fotos da Missão
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {projectImages.map((imgUrl, index) => (
+                        <div 
+                          key={index}
+                          onClick={() => {
+                            setLightboxImages(projectImages);
+                            setLightboxTitle(project.name);
+                            setLightboxIndex(index);
+                            setLightboxOpen(true);
+                          }}
+                          className="relative aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-accent hover:scale-[1.03] hover:shadow-xl transition-all duration-300 cursor-pointer group shadow-sm bg-slate-50 dark:bg-slate-900"
+                        >
+                          <img src={imgUrl} className="w-full h-full object-cover" alt={`${project.name} - Imagem ${index + 1}`} />
+                          <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-2xl scale-90 group-hover:scale-100 transition-transform duration-300">zoom_in</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {!id && (
                   <div className="grid grid-cols-2 gap-4 my-8">
                     <div className="rounded-xl overflow-hidden aspect-video">
@@ -813,6 +862,14 @@ export const ImpactPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <Lightbox 
+        images={lightboxImages} 
+        isOpen={lightboxOpen} 
+        onClose={() => setLightboxOpen(false)} 
+        title={lightboxTitle} 
+        initialIndex={lightboxIndex}
+      />
     </div>
   );
 };

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
+import { parseImages } from '../lib/imageUtils';
+import { Lightbox } from '../components/Lightbox';
 
 interface Initiative {
   id: string;
@@ -33,6 +35,9 @@ export const InitiativesPage: React.FC = () => {
   const [projects, setProjects] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'item' | 'experience'>('all');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState('');
   
   // Modal & Checkout State
   const [selectedInitiative, setSelectedInitiative] = useState<Initiative | null>(null);
@@ -275,6 +280,8 @@ export const InitiativesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredInitiatives.map((item) => {
             const progress = Math.min((item.raised_amount / item.goal_amount) * 100, 100);
+            const itemImages = parseImages(item.image_url);
+            const mainImage = itemImages[0] || 'https://picsum.photos/seed/default-initiative/800/600';
             return (
               <motion.div 
                 layout
@@ -282,13 +289,23 @@ export const InitiativesPage: React.FC = () => {
                 className="group bg-white rounded-3xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-300 flex flex-col h-full"
               >
                 {/* Visual Header */}
-                <div className="relative h-64 overflow-hidden shrink-0">
+                <div 
+                  onClick={() => {
+                    setLightboxImages(itemImages.length > 0 ? itemImages : [mainImage]);
+                    setLightboxTitle(item.title);
+                    setLightboxOpen(true);
+                  }}
+                  className="relative h-64 overflow-hidden shrink-0 cursor-pointer"
+                >
                   <img 
-                    src={item.image_url} 
+                    src={mainImage} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                     alt={item.title} 
                   />
-                  <div className="absolute top-6 left-6 flex flex-col gap-2">
+                  <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-3xl scale-90 group-hover:scale-100 transition-transform duration-300">photo_library</span>
+                  </div>
+                  <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
                     <span className="bg-primary text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md">
                       {item.type === 'item' ? 'Símbolo de Apoio' : 'Atividade Coletiva'}
                     </span>
@@ -791,6 +808,13 @@ export const InitiativesPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <Lightbox 
+        images={lightboxImages} 
+        isOpen={lightboxOpen} 
+        onClose={() => setLightboxOpen(false)} 
+        title={lightboxTitle} 
+      />
     </div>
   );
 };

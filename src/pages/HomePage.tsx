@@ -5,6 +5,8 @@ import { motion } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { supabase } from '../lib/supabase';
 import { SEO } from '../components/SEO';
+import { parseImages } from '../lib/imageUtils';
+import { Lightbox } from '../components/Lightbox';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
@@ -12,6 +14,9 @@ export const HomePage: React.FC = () => {
   const [donationAmount, setDonationAmount] = useState<string>('100');
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState('');
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = 'https://picsum.photos/seed/mission-fallback/800/600';
@@ -172,53 +177,67 @@ export const HomePage: React.FC = () => {
             {loading ? (
               <div className="col-span-full text-center py-10 font-bold text-slate-400 italic">{t('projects.loading')}</div>
             ) : projects.length > 0 ? (
-              projects.map((project) => (
-                <motion.div 
-                  key={project.id}
-                  whileHover={{ y: -10 }}
-                  className="group bg-background-light rounded-3xl overflow-hidden border border-primary/5 hover:shadow-2xl transition-all h-full flex flex-col"
-                >
-                  <div className="relative h-64 overflow-hidden shrink-0">
-                    <img 
-                      src={project.image_url || 'https://picsum.photos/seed/relief/800/600'} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      alt={project.name}
-                      referrerPolicy="no-referrer"
-                      onError={handleImageError}
-                    />
-                    <div className="absolute top-6 left-6 bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
-                      {project.category || t('missions.active')}
-                    </div>
-                  </div>
-                  <div className="p-8 flex flex-col flex-1">
-                    <h3 className="text-2xl font-black text-primary mb-4 line-clamp-1">{project.name}</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed mb-8 line-clamp-2">
-                      {project.description}
-                    </p>
-                    <div className="space-y-4 mt-auto">
-                      <div className="flex justify-between items-end">
-                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          {Math.round((project.raised_amount / project.goal_amount) * 100)}% {t('missions.funded')}
-                        </div>
-                        <div className="text-sm font-black text-primary">
-                          {formatAmount(project.raised_amount)} <span className="text-slate-400">/ {formatAmount(project.goal_amount)}</span>
-                        </div>
+              projects.map((project) => {
+                const projectImages = parseImages(project.image_url);
+                const mainImage = projectImages[0] || 'https://picsum.photos/seed/relief/800/600';
+                return (
+                  <motion.div 
+                    key={project.id}
+                    whileHover={{ y: -10 }}
+                    className="group bg-background-light rounded-3xl overflow-hidden border border-primary/5 hover:shadow-2xl transition-all h-full flex flex-col"
+                  >
+                    <div 
+                      onClick={() => {
+                        setLightboxImages(projectImages.length > 0 ? projectImages : [mainImage]);
+                        setLightboxTitle(project.name);
+                        setLightboxOpen(true);
+                      }}
+                      className="relative h-64 overflow-hidden shrink-0 cursor-pointer"
+                    >
+                      <img 
+                        src={mainImage} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        alt={project.name}
+                        referrerPolicy="no-referrer"
+                        onError={handleImageError}
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-white text-3xl scale-90 group-hover:scale-100 transition-transform duration-300">photo_library</span>
                       </div>
-                      <div className="h-3 w-full bg-primary/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${Math.min((project.raised_amount / project.goal_amount) * 100, 100)}%` }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          className="h-full bg-accent rounded-full"
-                        ></motion.div>
+                      <div className="absolute top-6 left-6 bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest z-10">
+                        {project.category || t('missions.active')}
                       </div>
-                      <Link to={`/impact/${project.id}`} className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all text-center block">
-                        {t('missions.support')}
-                      </Link>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                    <div className="p-8 flex flex-col flex-1">
+                      <h3 className="text-2xl font-black text-primary mb-4 line-clamp-1">{project.name}</h3>
+                      <p className="text-slate-500 text-sm leading-relaxed mb-8 line-clamp-2">
+                        {project.description}
+                      </p>
+                      <div className="space-y-4 mt-auto">
+                        <div className="flex justify-between items-end">
+                          <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                            {Math.round((project.raised_amount / project.goal_amount) * 100)}% {t('missions.funded')}
+                          </div>
+                          <div className="text-sm font-black text-primary">
+                            {formatAmount(project.raised_amount)} <span className="text-slate-400">/ {formatAmount(project.goal_amount)}</span>
+                          </div>
+                        </div>
+                        <div className="h-3 w-full bg-primary/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${Math.min((project.raised_amount / project.goal_amount) * 100, 100)}%` }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            className="h-full bg-accent rounded-full"
+                          ></motion.div>
+                        </div>
+                        <Link to={`/impact/${project.id}`} className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all text-center block">
+                          {t('missions.support')}
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
             ) : (
               <>
                 {/* Fallback Mission 1 */}
@@ -226,14 +245,24 @@ export const HomePage: React.FC = () => {
                   whileHover={{ y: -10 }}
                   className="group bg-background-light dark:bg-white/5 rounded-3xl overflow-hidden border border-primary/5 hover:shadow-2xl transition-all"
                 >
-                  <div className="relative h-64 overflow-hidden">
+                  <div 
+                    onClick={() => {
+                      setLightboxImages(["https://picsum.photos/seed/rio/800/600"]);
+                      setLightboxTitle(t('missions.rio.title'));
+                      setLightboxOpen(true);
+                    }}
+                    className="relative h-64 overflow-hidden cursor-pointer"
+                  >
                     <img 
                       src="https://picsum.photos/seed/rio/800/600" 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       alt="Rio Grande do Sul"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-6 left-6 bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                    <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-3xl scale-90 group-hover:scale-100 transition-transform duration-300">photo_library</span>
+                    </div>
+                    <div className="absolute top-6 left-6 bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest z-10">
                       {t('missions.rio.tag')}
                     </div>
                   </div>
@@ -356,6 +385,13 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <Lightbox 
+        images={lightboxImages} 
+        isOpen={lightboxOpen} 
+        onClose={() => setLightboxOpen(false)} 
+        title={lightboxTitle} 
+      />
     </div>
   );
 };

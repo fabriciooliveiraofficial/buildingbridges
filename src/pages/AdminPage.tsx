@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
+import { parseImages } from '../lib/imageUtils';
 
 export const AdminPage: React.FC = () => {
   const { t } = useTranslation();
@@ -25,6 +26,8 @@ export const AdminPage: React.FC = () => {
   // Upload state
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
   // Delete Confirmation Modal state
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; type: 'mission' | 'initiative'; id: string; name: string } | null>(null);
@@ -190,6 +193,10 @@ export const AdminPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (formImages.length >= 5) {
+        setMessage({ type: 'error', text: 'Limite máximo de 5 imagens atingido.' });
+        return;
+      }
       setImageFile(file);
       setIsReadingFile(true);
       
@@ -197,13 +204,7 @@ export const AdminPage: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setImagePreview(base64String);
-        
-        if (activeConsole === 'mission') {
-          setFormData(prev => ({ ...prev, image_url: base64String }));
-        } else {
-          setInitiativeData(prev => ({ ...prev, image_url: base64String }));
-        }
+        setFormImages(prev => [...prev, base64String]);
         setIsReadingFile(false);
       };
       reader.onerror = () => {
@@ -214,11 +215,27 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim()) return;
+    if (formImages.length >= 5) {
+      setMessage({ type: 'error', text: 'Limite máximo de 5 imagens atingido.' });
+      return;
+    }
+    setFormImages(prev => [...prev, imageUrlInput.trim()]);
+    setImageUrlInput('');
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setFormImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Switch to creation mode
   const handleCreateNew = () => {
     setEditingId(null);
     setImageFile(null);
     setImagePreview(null);
+    setFormImages([]);
+    setImageUrlInput('');
     setMessage({ type: '', text: '' });
 
     if (activeConsole === 'mission') {
@@ -253,6 +270,9 @@ export const AdminPage: React.FC = () => {
     setEditingId(item.id);
     setImageFile(null);
     setImagePreview(item.image_url);
+    const parsed = parseImages(item.image_url);
+    setFormImages(parsed);
+    setImageUrlInput('');
     setMessage({ type: '', text: '' });
 
     if (activeConsole === 'mission') {
@@ -343,7 +363,11 @@ export const AdminPage: React.FC = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const finalImageUrl = activeConsole === 'mission' ? formData.image_url : initiativeData.image_url;
+      const savedImageUrl = formImages.length > 0 
+        ? JSON.stringify(formImages) 
+        : (activeConsole === 'mission' 
+          ? 'https://picsum.photos/seed/default-mission/1200/800' 
+          : 'https://picsum.photos/seed/default-initiative/800/600');
 
       if (activeConsole === 'mission') {
         // ================== PROCESS MISSION (PROJECT) ==================
@@ -359,7 +383,7 @@ export const AdminPage: React.FC = () => {
           name: formData.name,
           description: formData.description,
           goal_amount: parseFloat(formData.goal_amount),
-          image_url: finalImageUrl || 'https://picsum.photos/seed/default-mission/1200/800',
+          image_url: savedImageUrl,
           status: formData.status,
           category: formData.category,
           long_description: formData.long_description,
@@ -399,7 +423,7 @@ export const AdminPage: React.FC = () => {
           description: initiativeData.description || '',
           suggested_price: parseFloat(initiativeData.suggested_price),
           impact_description: initiativeData.impact_description,
-          image_url: finalImageUrl || 'https://picsum.photos/seed/default-initiative/800/600',
+          image_url: savedImageUrl,
           goal_amount: parseFloat(initiativeData.goal_amount || '0'),
           status: initiativeData.status,
           created_by_user: 'admin_console'
@@ -717,46 +741,72 @@ export const AdminPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
-                  {/* Persistent Base64 Image Upload */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Imagem da Missão</label>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-4">
-                        <label className="flex-1 cursor-pointer">
-                          <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 hover:border-accent transition-all rounded-xl py-8 px-6 flex flex-col items-center justify-center gap-2 group">
-                            <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-accent transition-colors">cloud_upload</span>
-                            <span className="text-sm font-bold text-slate-500">Upload de Arquivo (Persistido no Banco)</span>
-                            <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                          </div>
-                        </label>
-                        {imagePreview && (
-                          <div className="size-24 rounded-xl overflow-hidden border-2 border-accent shadow-lg shadow-accent/10 relative group shrink-0">
-                            <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
-                            <button 
-                              type="button"
-                              onClick={() => { setImageFile(null); setImagePreview(null); setFormData(p => ({ ...p, image_url: '' })); }}
-                              className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                            >
-                              <span className="material-symbols-outlined">delete</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none">
-                          <span className="text-xs font-black text-slate-400 uppercase">OU URL</span>
+
+                  {/* Premium Multi-Image Upload & Gallery (Up to 5 images) */}
+                  <div className="space-y-2 col-span-1 md:col-span-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex justify-between items-center">
+                      <span>Galeria de Imagens da Missão ({formImages.length}/5)</span>
+                      <span className="text-[10px] text-slate-400 italic font-bold">A primeira imagem será o destaque</span>
+                    </label>
+                    <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl p-6 space-y-4">
+                      {/* Grid of added images */}
+                      {formImages.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                          {formImages.map((img, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border-2 border-slate-200 group shadow-sm bg-white shrink-0">
+                              <img src={img} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
+                              <div className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] font-black px-2 py-0.5 rounded">
+                                #{idx + 1} {idx === 0 ? 'Destaque' : ''}
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-md transition-colors shadow flex items-center justify-center opacity-0 group-hover:opacity-100"
+                              >
+                                <span className="material-symbols-outlined text-sm">close</span>
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <input 
-                          className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 pl-20 pr-6 outline-none font-bold transition-all text-slate-800"
-                          value={formData.image_url}
-                          onChange={(e) => {
-                            setFormData({...formData, image_url: e.target.value});
-                            if (e.target.value) { setImageFile(null); setImagePreview(e.target.value); }
-                          }}
-                          placeholder="https://images.unsplash.com/..."
-                        />
-                      </div>
+                      )}
+
+                      {/* Add new image controls */}
+                      {formImages.length < 5 ? (
+                        <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+                          {/* File input upload */}
+                          <label className="flex-1 cursor-pointer">
+                            <div className="h-full bg-white border-2 border-dashed border-slate-200 hover:border-accent transition-all rounded-xl py-6 px-4 flex flex-col items-center justify-center gap-1 group text-center">
+                              <span className="material-symbols-outlined text-2xl text-slate-400 group-hover:text-accent transition-colors">cloud_upload</span>
+                              <span className="text-xs font-bold text-slate-500">Upload de Arquivo</span>
+                              <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                            </div>
+                          </label>
+
+                          {/* URL input */}
+                          <div className="flex-[2] flex flex-col justify-between gap-2 bg-white border-2 border-slate-100 rounded-xl p-4">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Ou Adicionar via URL</label>
+                            <div className="flex gap-2">
+                              <input 
+                                className="flex-1 bg-slate-50 border-2 border-transparent focus:border-accent rounded-lg py-2 px-3 outline-none font-bold text-xs text-slate-800"
+                                value={imageUrlInput}
+                                onChange={(e) => setImageUrlInput(e.target.value)}
+                                placeholder="https://images.unsplash.com/..."
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddImageUrl}
+                                className="px-4 py-2 bg-primary hover:bg-slate-800 text-white font-black text-xs rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                Adicionar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl p-4 text-xs font-bold text-center">
+                          Limite máximo de 5 imagens atingido. Remova uma imagem para adicionar outra.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -937,45 +987,71 @@ export const AdminPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* Persistent Base64 Image Upload */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Imagem da Iniciativa</label>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-4">
-                        <label className="flex-1 cursor-pointer">
-                          <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 hover:border-accent transition-all rounded-xl py-8 px-6 flex flex-col items-center justify-center gap-2 group">
-                            <span className="material-symbols-outlined text-3xl text-slate-400 group-hover:text-accent transition-colors">cloud_upload</span>
-                            <span className="text-sm font-bold text-slate-500">Upload de Imagem (Persistido no Banco)</span>
-                            <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                          </div>
-                        </label>
-                        {imagePreview && (
-                          <div className="size-24 rounded-xl overflow-hidden border-2 border-accent shadow-lg shadow-accent/10 relative group shrink-0">
-                            <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
-                            <button 
-                              type="button"
-                              onClick={() => { setImageFile(null); setImagePreview(null); setInitiativeData(p => ({ ...p, image_url: '' })); }}
-                              className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                            >
-                              <span className="material-symbols-outlined">delete</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none">
-                          <span className="text-xs font-black text-slate-400 uppercase">OU URL</span>
+                  {/* Premium Multi-Image Upload & Gallery (Up to 5 images) */}
+                  <div className="space-y-2 col-span-1 md:col-span-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex justify-between items-center">
+                      <span>Galeria de Imagens da Iniciativa ({formImages.length}/5)</span>
+                      <span className="text-[10px] text-slate-400 italic font-bold">A primeira imagem será o destaque</span>
+                    </label>
+                    <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl p-6 space-y-4">
+                      {/* Grid of added images */}
+                      {formImages.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                          {formImages.map((img, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border-2 border-slate-200 group shadow-sm bg-white shrink-0">
+                              <img src={img} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
+                              <div className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] font-black px-2 py-0.5 rounded">
+                                #{idx + 1} {idx === 0 ? 'Destaque' : ''}
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-md transition-colors shadow flex items-center justify-center opacity-0 group-hover:opacity-100"
+                              >
+                                <span className="material-symbols-outlined text-sm">close</span>
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                        <input 
-                          className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 pl-20 pr-6 outline-none font-bold transition-all text-slate-800"
-                          value={initiativeData.image_url}
-                          onChange={(e) => {
-                            setInitiativeData({...initiativeData, image_url: e.target.value});
-                            if (e.target.value) { setImageFile(null); setImagePreview(e.target.value); }
-                          }}
-                          placeholder="https://images.unsplash.com/..."
-                        />
-                      </div>
+                      )}
+
+                      {/* Add new image controls */}
+                      {formImages.length < 5 ? (
+                        <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+                          {/* File input upload */}
+                          <label className="flex-1 cursor-pointer">
+                            <div className="h-full bg-white border-2 border-dashed border-slate-200 hover:border-accent transition-all rounded-xl py-6 px-4 flex flex-col items-center justify-center gap-1 group text-center">
+                              <span className="material-symbols-outlined text-2xl text-slate-400 group-hover:text-accent transition-colors">cloud_upload</span>
+                              <span className="text-xs font-bold text-slate-500">Upload de Imagem</span>
+                              <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                            </div>
+                          </label>
+
+                          {/* URL input */}
+                          <div className="flex-[2] flex flex-col justify-between gap-2 bg-white border-2 border-slate-100 rounded-xl p-4">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Ou Adicionar via URL</label>
+                            <div className="flex gap-2">
+                              <input 
+                                className="flex-1 bg-slate-50 border-2 border-transparent focus:border-accent rounded-lg py-2 px-3 outline-none font-bold text-xs text-slate-800"
+                                value={imageUrlInput}
+                                onChange={(e) => setImageUrlInput(e.target.value)}
+                                placeholder="https://images.unsplash.com/..."
+                              />
+                              <button
+                                type="button"
+                                onClick={handleAddImageUrl}
+                                className="px-4 py-2 bg-primary hover:bg-slate-800 text-white font-black text-xs rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                Adicionar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl p-4 text-xs font-bold text-center">
+                          Limite máximo de 5 imagens atingido. Remova uma imagem para adicionar outra.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1039,7 +1115,7 @@ export const AdminPage: React.FC = () => {
                       <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-4 px-4">
                           <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
-                            <img src={m.image_url} alt={m.name} className="w-full h-full object-cover" />
+                            <img src={parseImages(m.image_url)[0] || 'https://picsum.photos/seed/default-mission/1200/800'} alt={m.name} className="w-full h-full object-cover" />
                           </div>
                         </td>
                         <td className="py-4 px-4 space-y-1">
@@ -1108,7 +1184,7 @@ export const AdminPage: React.FC = () => {
                       <tr key={i.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-4 px-4">
                           <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
-                            <img src={i.image_url} alt={i.title} className="w-full h-full object-cover" />
+                            <img src={parseImages(i.image_url)[0] || 'https://picsum.photos/seed/default-initiative/800/600'} alt={i.title} className="w-full h-full object-cover" />
                           </div>
                         </td>
                         <td className="py-4 px-4 font-black text-slate-900 text-sm">{i.title}</td>
