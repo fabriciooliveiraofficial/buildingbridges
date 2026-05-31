@@ -1115,6 +1115,22 @@ app.post('/api/checkout/create-session', async (req, res) => {
   try {
     const { initiative_id, project_id, amount, currency, name, email, phone, notes } = req.body;
 
+    // Determine the base URL dynamically based on request origin to support seamless local, staging, and production redirects
+    let appBaseUrl = process.env.APP_URL;
+    try {
+      const requestOrigin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : '');
+      if (requestOrigin && requestOrigin.includes('buildingbridgesbrusa.org')) {
+        appBaseUrl = 'https://buildingbridgesbrusa.org';
+      } else if (requestOrigin && !requestOrigin.includes('localhost') && !requestOrigin.includes('127.0.0.1')) {
+        appBaseUrl = requestOrigin;
+      }
+    } catch (err) {
+      console.error('Failed to parse referer/origin for dynamic base URL:', err);
+    }
+    if (!appBaseUrl) {
+      appBaseUrl = 'http://localhost:3000';
+    }
+
     if ((!initiative_id && !project_id) || !amount || !currency || !name || !email || !phone) {
       return res.status(400).json({ error: 'Missing required fields (initiative_id or project_id, amount, currency, name, email, phone).' });
     }
@@ -1188,8 +1204,8 @@ app.post('/api/checkout/create-session', async (req, res) => {
           }
         },
         back_urls: {
-          success: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=mercadopago&success=true&pref_id=${transactionId}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
-          failure: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`
+          success: `${appBaseUrl}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=mercadopago&success=true&pref_id=${transactionId}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
+          failure: `${appBaseUrl}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`
         },
         auto_return: 'approved',
         external_reference: transactionId,
@@ -1242,8 +1258,8 @@ app.post('/api/checkout/create-session', async (req, res) => {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=stripe&success=true&session_id={CHECKOUT_SESSION_ID}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
-        cancel_url: `${process.env.APP_URL || 'http://localhost:3000'}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`,
+        success_url: `${appBaseUrl}${project_id ? `/impact/${project_id}` : '/action-hub'}?gateway=stripe&success=true&session_id={CHECKOUT_SESSION_ID}&init_id=${initiative_id || ''}&proj_id=${project_id || ''}`,
+        cancel_url: `${appBaseUrl}${project_id ? `/impact/${project_id}` : '/action-hub'}?canceled=true`,
         customer_email: email,
         metadata: {
           initiative_id: initiative_id || null,
