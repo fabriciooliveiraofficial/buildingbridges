@@ -81,6 +81,66 @@ const PORT = process.env.PORT || 5000;
 
 // Express middlewares
 app.use(cors());
+
+// Stripe Webhook Endpoint - Parses raw request body for secure signature verification
+app.post('/api/checkout/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET is not configured.');
+    return res.status(500).json({ error: 'Webhook secret is not configured on the server.' });
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error(`[WEBHOOK SIGNATURE ERROR] ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    console.log(`[WEBHOOK RECEIVED] processing session: ${session.id}`);
+
+    try {
+      const verifiedAmount = session.amount_total / 100;
+      const currency = session.currency.toUpperCase();
+      const supporterName = session.metadata?.supporter_name || 'Apoiador';
+      const supporterEmail = session.metadata?.supporter_email || session.customer_details?.email || 'email@example.com';
+      const supporterPhone = session.metadata?.supporter_phone || session.customer_details?.phone || '';
+      const notes = session.metadata?.additional_notes || '';
+      const initiativeId = session.metadata?.initiative_id || null;
+      const projectId = session.metadata?.project_id || null;
+      const transactionRef = session.id;
+
+      await saveVerifiedContribution({
+        gateway: 'stripe',
+        verifiedAmount,
+        currency,
+        supporterName,
+        supporterEmail,
+        supporterPhone,
+        notes,
+        initiativeId,
+        projectId,
+        transactionRef
+      });
+
+      console.log(`[WEBHOOK SUCCESS] Contribution successfully verified and saved for session: ${session.id}`);
+    } catch (err) {
+      console.error(`[WEBHOOK DATABASE ERROR] failed to save contribution:`, err.message);
+      // Return 500 so Stripe retries if it was a database transient error
+      return res.status(500).json({ error: 'Database processing failed' });
+    }
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -455,6 +515,122 @@ async function initializeDatabase() {
     }
   } catch (error) {
     console.error('Failed to initialize database:', error);
+  }
+}
+
+// --- DATABASE TRANSACTION HELPER FOR WEBHOOKS & MANUAL REDIRECTS ---
+
+/**
+ * Saves a verified contribution and increments raised amounts safely within a transaction.
+ * @param {Object} details 
+ * @returns {Promise<Object>} Object containing status, contribution details, and initiativeTitle
+ */
+async function saveVerifiedContribution({
+  gateway,
+  verifiedAmount,
+  currency,
+  supporterName,
+  supporterEmail,
+  supporterPhone,
+  notes,
+  initiativeId,
+  projectId,
+  transactionRef
+}) {
+  let dbConnection;
+  try {
+    dbConnection = await pool.getConnection();
+    await dbConnection.beginTransaction();
+
+    // Check if transaction has already been registered
+    const [existing] = await dbConnection.query('SELECT id FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
+    
+    if (existing.length > 0) {
+      console.log(`[VERIFY HELPER] Transaction already registered: ${transactionRef}`);
+      await dbConnection.rollback();
+      
+      // Fetch the registered contribution
+      const [contributionRows] = await pool.query('SELECT * FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
+      
+      let title = 'Missão Urgente';
+      if (initiativeId) {
+        const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+        title = initiativeRows[0]?.title || 'Ação Solidária';
+      } else if (projectId) {
+        const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
+        title = projectRows[0]?.name || 'Missão Urgente';
+      }
+      
+      return {
+        alreadyProcessed: true,
+        contribution: contributionRows[0],
+        initiativeTitle: title
+      };
+    }
+
+    const contributionId = `pledge-${Math.random().toString(36).substring(2, 11)}`;
+    const contributionData = {
+      id: contributionId,
+      initiative_id: initiativeId || null,
+      project_id: projectId || null,
+      pledge_amount: verifiedAmount,
+      currency: currency,
+      supporter_name: supporterName,
+      supporter_email: supporterEmail,
+      supporter_phone: supporterPhone,
+      gateway: gateway,
+      transaction_reference: transactionRef,
+      status: 'completed',
+      additional_notes: notes || null
+    };
+
+    // Insert contribution
+    await dbConnection.query('INSERT INTO `contributions` SET ?', contributionData);
+    
+    // Increment raised_amount of the specific initiative or project
+    if (initiativeId) {
+      await dbConnection.query(
+        'UPDATE `initiatives` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+        [verifiedAmount, initiativeId]
+      );
+      
+      // Also update the parent project's raised_amount
+      const [initRows] = await dbConnection.query('SELECT project_id FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      if (initRows.length > 0 && initRows[0].project_id) {
+        await dbConnection.query(
+          'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+          [verifiedAmount, initRows[0].project_id]
+        );
+      }
+    } else if (projectId) {
+      await dbConnection.query(
+        'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
+        [verifiedAmount, projectId]
+      );
+    }
+
+    await dbConnection.commit();
+    console.log(`[VERIFY HELPER SUCCESS] Contribution successfully registered: ${contributionId}`);
+
+    let title = 'Missão Urgente';
+    if (initiativeId) {
+      const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
+      title = initiativeRows[0]?.title || 'Ação Solidária';
+    } else if (projectId) {
+      const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
+      title = projectRows[0]?.name || 'Missão Urgente';
+    }
+
+    return {
+      alreadyProcessed: false,
+      contribution: contributionData,
+      initiativeTitle: title
+    };
+  } catch (err) {
+    if (dbConnection) await dbConnection.rollback();
+    throw err;
+  } finally {
+    if (dbConnection) dbConnection.release();
   }
 }
 
@@ -1055,7 +1231,6 @@ app.post('/api/checkout/create-session', async (req, res) => {
 
 // POST /api/checkout/verify-session - Securely confirm payment status and record to MySQL
 app.post('/api/checkout/verify-session', async (req, res) => {
-  let dbConnection;
   try {
     const { gateway, session_id, payment_id } = req.body;
 
@@ -1124,101 +1299,29 @@ app.post('/api/checkout/verify-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid gateway specified.' });
     }
 
-    // 3. MySQL Transaction: Save contribution and increment raised amount safely
-    dbConnection = await pool.getConnection();
-    await dbConnection.beginTransaction();
-
-    // Check if transaction has already been registered
-    const [existing] = await dbConnection.query('SELECT id FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
-    
-    if (existing.length > 0) {
-      console.log(`[VERIFY] Pledged transaction already registered: ${transactionRef}`);
-      await dbConnection.rollback();
-      
-      // Already registered, return existing profile for receipt reproduction
-      const [contributionRows] = await pool.query('SELECT * FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
-      
-      let title = 'Missão Urgent';
-      if (initiativeId) {
-        const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
-        title = initiativeRows[0]?.title || 'Ação Solidária';
-      } else if (projectId) {
-        const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
-        title = projectRows[0]?.name || 'Missão Urgente';
-      }
-      
-      return res.json({
-        success: true,
-        alreadyProcessed: true,
-        contribution: contributionRows[0],
-        initiativeTitle: title
-      });
-    }
-
-    const contributionId = `pledge-${Math.random().toString(36).substring(2, 11)}`;
-    const contributionData = {
-      id: contributionId,
-      initiative_id: initiativeId || null,
-      project_id: projectId || null,
-      pledge_amount: verifiedAmount,
-      currency: currency,
-      supporter_name: supporterName,
-      supporter_email: supporterEmail,
-      supporter_phone: supporterPhone,
-      gateway: gateway,
-      transaction_reference: transactionRef,
-      status: 'completed',
-      additional_notes: notes || null
-    };
-
-    // Insert contribution
-    await dbConnection.query('INSERT INTO `contributions` SET ?', contributionData);
-    
-    // Increment raised_amount of the specific initiative or project
-    if (initiativeId) {
-      await dbConnection.query(
-        'UPDATE `initiatives` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
-        [verifiedAmount, initiativeId]
-      );
-      
-      // Also update the parent project's raised_amount
-      const [initRows] = await dbConnection.query('SELECT project_id FROM `initiatives` WHERE `id` = ?', [initiativeId]);
-      if (initRows.length > 0 && initRows[0].project_id) {
-        await dbConnection.query(
-          'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
-          [verifiedAmount, initRows[0].project_id]
-        );
-      }
-    } else if (projectId) {
-      await dbConnection.query(
-        'UPDATE `projects` SET `raised_amount` = `raised_amount` + ? WHERE `id` = ?',
-        [verifiedAmount, projectId]
-      );
-    }
-
-    await dbConnection.commit();
-    console.log(`[VERIFY SUCCESS] Contribution successfully registered: ${contributionId}`);
-
-    let title = 'Missão Urgent';
-    if (initiativeId) {
-      const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
-      title = initiativeRows[0]?.title || 'Ação Solidária';
-    } else if (projectId) {
-      const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
-      title = projectRows[0]?.name || 'Missão Urgente';
-    }
+    // 3. MySQL Transaction: Save contribution and increment raised amount safely using helper
+    const result = await saveVerifiedContribution({
+      gateway,
+      verifiedAmount,
+      currency,
+      supporterName,
+      supporterEmail,
+      supporterPhone,
+      notes,
+      initiativeId,
+      projectId,
+      transactionRef
+    });
 
     res.json({
       success: true,
-      contribution: contributionData,
-      initiativeTitle: title
+      alreadyProcessed: result.alreadyProcessed || false,
+      contribution: result.contribution,
+      initiativeTitle: result.initiativeTitle
     });
   } catch (err) {
-    if (dbConnection) await dbConnection.rollback();
     console.error('API Error /api/checkout/verify-session:', err);
     res.status(500).json({ error: err.message || 'Database error validating pledge.' });
-  } finally {
-    if (dbConnection) dbConnection.release();
   }
 });
 
