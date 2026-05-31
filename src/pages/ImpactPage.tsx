@@ -852,7 +852,7 @@ export const ImpactPage: React.FC = () => {
                       ) : (
                         <>
                           <span className="material-symbols-outlined text-lg">credit_score</span>
-                          Redirecionar para Pagamento Seguro
+                          DOAÇÃO SEGURA
                         </>
                       )}
                     </button>

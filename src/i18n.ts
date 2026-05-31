@@ -219,7 +219,7 @@ const resources = {
         "quick": "Doação Rápida",
         "other": "Outro valor",
         "secure": "Protegido via Protocolo BridgeTech",
-        "proceed": "PROSSEGUIR PARA PAGAMENTO SEGURO"
+        "proceed": "DOAÇÃO SEGURA"
       },
       "missions": {
         "title": "Missões Urgentes",

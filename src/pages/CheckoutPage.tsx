@@ -434,7 +434,7 @@ export const CheckoutPage: React.FC = () => {
               ) : (
                 <>
                   <span className="material-symbols-outlined text-lg">credit_score</span>
-                  REDIRECIONAR PARA PAGAMENTO SEGURO
+                  DOAÇÃO SEGURA
                 </>
               )}
             </button>

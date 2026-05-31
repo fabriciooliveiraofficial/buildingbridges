@@ -657,7 +657,7 @@ export const InitiativesPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <span>Ir para Pagamento Seguro</span>
+                          <span>DOAÇÃO SEGURA</span>
                           <span className="material-symbols-outlined">payments</span>
                         </>
                       )}
