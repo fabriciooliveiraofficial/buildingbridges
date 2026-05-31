@@ -12,8 +12,14 @@ import Stripe from 'stripe';
 // Load environment variables immediately
 dotenv.config();
 
-// Initialize Stripe client
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51MockStripeKeyPlaceholder');
+// Stripe Client Getter with descriptive environment check
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || key === 'sk_test_51MockStripeKeyPlaceholder' || key.includes('Placeholder')) {
+    throw new Error('A chave secreta do Stripe (STRIPE_SECRET_KEY) não foi encontrada nas variáveis de ambiente. Se você já cadastrou a chave, lembre-se de REINICIAR o aplicativo Node.js no painel da Hostinger para que as novas configurações entrem em vigor.');
+  }
+  return new Stripe(key);
+}
 
 // --- NATIVE CRYPTOGRAPHY AUTH SECURITY SYSTEM ---
 
@@ -94,6 +100,7 @@ app.post('/api/checkout/stripe-webhook', express.raw({ type: 'application/json' 
 
   let event;
   try {
+    const stripe = getStripe();
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error(`[WEBHOOK SIGNATURE ERROR] ${err.message}`);
@@ -1216,7 +1223,7 @@ app.post('/api/checkout/create-session', async (req, res) => {
     } else {
       // --- STRIPE CHECKOUT SESSION (USD) ---
       console.log(`[PAYMENT STRIPE] Generating USD Checkout Session for amount: ${value}`);
-      
+      const stripe = getStripe();
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -1278,6 +1285,7 @@ app.post('/api/checkout/verify-session', async (req, res) => {
 
     if (gateway === 'stripe') {
       console.log(`[VERIFY STRIPE] Fetching session details for: ${session_id}`);
+      const stripe = getStripe();
       const session = await stripe.checkout.sessions.retrieve(session_id);
       
       if (session.payment_status !== 'paid') {
