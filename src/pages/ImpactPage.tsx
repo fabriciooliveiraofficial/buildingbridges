@@ -26,6 +26,7 @@ export const ImpactPage: React.FC = () => {
   const [customDonation, setCustomDonation] = useState<string>('');
   const [donationTier, setDonationTier] = useState<'tier1' | 'tier2' | 'tier3' | 'custom'>('tier1');
   const [checkoutStep, setCheckoutStep] = useState<'tier' | 'contact'>('tier');
+  const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'BRL'>(currency as 'USD' | 'BRL' || 'USD');
   
   // Supporter contact info
   const [supporterName, setSupporterName] = useState('');
@@ -49,10 +50,10 @@ export const ImpactPage: React.FC = () => {
   };
 
   // Helper to calculate tier values based on currency
-  const getContributionValues = () => {
-    const t1 = currency === 'BRL' ? Math.round(25 * rate) : 25;
-    const t2 = currency === 'BRL' ? Math.round(50 * rate) : 50;
-    const t3 = currency === 'BRL' ? Math.round(100 * rate) : 100;
+  const getContributionValues = (curr: 'USD' | 'BRL' = currency as 'USD' | 'BRL') => {
+    const t1 = curr === 'BRL' ? Math.round(25 * rate) : 25;
+    const t2 = curr === 'BRL' ? Math.round(50 * rate) : 50;
+    const t3 = curr === 'BRL' ? Math.round(100 * rate) : 100;
     return { t1, t2, t3 };
   };
 
@@ -175,6 +176,7 @@ export const ImpactPage: React.FC = () => {
     setSupporterPhone('');
     setAdditionalNotes('');
     setCheckoutError('');
+    setSelectedCurrency(currency as 'USD' | 'BRL' || 'USD');
     setShowSupportModal(true);
   };
 
@@ -193,7 +195,7 @@ export const ImpactPage: React.FC = () => {
     setCheckoutError('');
 
     try {
-      const { t1, t2, t3 } = getContributionValues();
+      const { t1, t2, t3 } = getContributionValues(selectedCurrency);
       let finalAmount = t1;
       
       if (donationTier === 'tier2') finalAmount = t2;
@@ -208,7 +210,7 @@ export const ImpactPage: React.FC = () => {
         body: JSON.stringify({
           project_id: project.id,
           amount: finalAmount,
-          currency: currency, // global CurrencyContext (USD or BRL)
+          currency: selectedCurrency, // dynamic local currency
           name: supporterName,
           email: supporterEmail,
           phone: supporterPhone,
@@ -671,94 +673,132 @@ export const ImpactPage: React.FC = () => {
               <form onSubmit={handleCompleteDonation} className="space-y-6">
                 {checkoutStep === 'tier' ? (
                   // --- STEP 1: VALUE TIER SELECTION ---
-                  <div className="space-y-6">
-                    <div>
-                      <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
-                        Apoiar Missão Urgentemente
-                      </span>
-                      <h3 className="text-2xl font-black text-primary leading-tight">{project.name}</h3>
-                    </div>
-
-                    <div className="bg-accent/5 border border-accent/15 rounded-2xl p-5 text-center">
-                      <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Moeda e Destinação</p>
-                      <p className="text-xs font-bold text-primary">
-                        Seu apoio será processado em **{currency === 'BRL' ? 'Reais (BRL)' : 'Dólares (USD)'}** com destinação imediata à reconstrução local.
-                      </p>
-                    </div>
-
-                    {/* Pre-defined Tiers */}
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Selecione o valor do apoio</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('tier1')}
-                          className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
-                            donationTier === 'tier1' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
-                          }`}
-                        >
-                          {currency === 'BRL' ? 'R$' : '$'}{t1}
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('tier2')}
-                          className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
-                            donationTier === 'tier2' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
-                          }`}
-                        >
-                          {currency === 'BRL' ? 'R$' : '$'}{t2}
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('tier3')}
-                          className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
-                            donationTier === 'tier3' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
-                          }`}
-                        >
-                          {currency === 'BRL' ? 'R$' : '$'}{t3}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Custom input */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          id="customCheck" 
-                          checked={donationTier === 'custom'}
-                          onChange={() => setDonationTier(donationTier === 'custom' ? 'tier2' : 'custom')}
-                          className="size-4 border-slate-200 rounded text-accent focus:ring-accent"
-                        />
-                        <label htmlFor="customCheck" className="text-xs font-bold text-slate-600 cursor-pointer">Definir outro valor voluntário</label>
-                      </div>
-
-                      {donationTier === 'custom' && (
-                        <div className="relative">
-                          <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-lg text-slate-400">
-                            {currency === 'BRL' ? 'R$' : 'US$'}
+                  (() => {
+                    const modalTiers = getContributionValues(selectedCurrency);
+                    return (
+                      <div className="space-y-6">
+                        <div>
+                          <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
+                            Apoiar Missão Urgentemente
                           </span>
-                          <input 
-                            required
-                            type="number"
-                            min="5"
-                            placeholder="Valor personalizado"
-                            value={customDonation}
-                            onChange={(e) => setCustomDonation(e.target.value)}
-                            className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-2xl py-4.5 pl-14 pr-6 outline-none font-black text-slate-800 text-lg shadow-inner"
-                          />
+                          <h3 className="text-2xl font-black text-primary leading-tight">{project.name}</h3>
                         </div>
-                      )}
-                    </div>
 
-                    <button 
-                      type="submit"
-                      className="w-full py-4.5 rounded-2xl bg-primary text-white font-black text-sm hover:bg-primary/95 transition-all flex items-center justify-center gap-2 shadow-xl"
-                    >
-                      Prosseguir para Detalhes
-                      <span className="material-symbols-outlined text-lg">arrow_forward</span>
-                    </button>
-                  </div>
+                        <div className="bg-accent/5 border border-accent/15 rounded-2xl p-5 text-center">
+                          <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Moeda e Destinação</p>
+                          <p className="text-xs font-bold text-primary">
+                            Seu apoio será processado em **{selectedCurrency === 'BRL' ? 'Reais (BRL)' : 'Dólares (USD)'}** com destinação imediata à reconstrução local.
+                          </p>
+                        </div>
+
+                        {/* Currency Selector Switch */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Moeda e Gateway de Pagamento</label>
+                          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedCurrency('USD')}
+                              className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
+                                selectedCurrency === 'USD' 
+                                  ? 'bg-white dark:bg-slate-700 shadow-md text-indigo-600 dark:text-indigo-400 border border-slate-200/50' 
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                              }`}
+                              title="USD (Stripe)"
+                            >
+                              <span className="material-symbols-outlined text-lg">credit_card</span>
+                              <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇺🇸</span>
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedCurrency('BRL')}
+                              className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
+                                selectedCurrency === 'BRL' 
+                                  ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-blue-400 border border-slate-200/50' 
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                              }`}
+                              title="BRL (Mercado Pago)"
+                            >
+                              <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                              <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇧🇷</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Pre-defined Tiers */}
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Selecione o valor do apoio</label>
+                          <div className="grid grid-cols-3 gap-3">
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('tier1')}
+                              className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
+                                donationTier === 'tier1' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
+                              }`}
+                            >
+                              {selectedCurrency === 'BRL' ? 'R$' : '$'}{modalTiers.t1}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('tier2')}
+                              className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
+                                donationTier === 'tier2' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
+                              }`}
+                            >
+                              {selectedCurrency === 'BRL' ? 'R$' : '$'}{modalTiers.t2}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('tier3')}
+                              className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${
+                                donationTier === 'tier3' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
+                              }`}
+                            >
+                              {selectedCurrency === 'BRL' ? 'R$' : '$'}{modalTiers.t3}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Custom input */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="checkbox" 
+                              id="customCheck" 
+                              checked={donationTier === 'custom'}
+                              onChange={() => setDonationTier(donationTier === 'custom' ? 'tier2' : 'custom')}
+                              className="size-4 border-slate-200 rounded text-accent focus:ring-accent"
+                            />
+                            <label htmlFor="customCheck" className="text-xs font-bold text-slate-600 cursor-pointer">Definir outro valor voluntário</label>
+                          </div>
+
+                          {donationTier === 'custom' && (
+                            <div className="relative">
+                              <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-lg text-slate-400">
+                                {selectedCurrency === 'BRL' ? 'R$' : 'US$'}
+                              </span>
+                              <input 
+                                required
+                                type="number"
+                                min="5"
+                                placeholder="Valor personalizado"
+                                value={customDonation}
+                                onChange={(e) => setCustomDonation(e.target.value)}
+                                className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-2xl py-4.5 pl-14 pr-6 outline-none font-black text-slate-800 text-lg shadow-inner"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <button 
+                          type="submit"
+                          className="w-full py-4.5 rounded-2xl bg-primary text-white font-black text-sm hover:bg-primary/95 transition-all flex items-center justify-center gap-2 shadow-xl"
+                        >
+                          Prosseguir para Detalhes
+                          <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                        </button>
+                      </div>
+                    );
+                  })()
                 ) : (
                   // --- STEP 2: CONTACT DETAILS ---
                   <div className="space-y-6">
@@ -835,7 +875,7 @@ export const ImpactPage: React.FC = () => {
                     <div className="bg-success/5 border border-success/15 rounded-xl p-4 text-center flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined text-success text-lg">shield_with_heart</span>
                       <span className="text-[10px] font-black text-success uppercase tracking-widest">
-                        Processado em ambiente de segurança homologado ({currency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
+                        Processado em ambiente de segurança homologado ({selectedCurrency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
                       </span>
                     </div>
 

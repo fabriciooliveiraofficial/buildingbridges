@@ -44,6 +44,20 @@ export const InitiativesPage: React.FC = () => {
   const [customDonation, setCustomDonation] = useState<string>('');
   const [donationTier, setDonationTier] = useState<'suggested' | 'amplified' | 'double' | 'custom'>('suggested');
   const [checkoutStep, setCheckoutStep] = useState<'tier' | 'contact'>('tier');
+  const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'BRL'>(currency as 'USD' | 'BRL' || 'USD');
+
+  const formatCurrencyValue = (amount: number, curr: 'USD' | 'BRL') => {
+    if (curr === 'BRL') {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(amount);
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
   
   // Supporter contact info
   const [supporterName, setSupporterName] = useState('');
@@ -155,10 +169,11 @@ export const InitiativesPage: React.FC = () => {
   });
 
   // Calculate prices based on selected donation tier
-  const getContributionValues = (suggestedPrice: number) => {
-    const min = suggestedPrice;
-    const amplified = Math.round(suggestedPrice * 1.5);
-    const double = suggestedPrice * 2;
+  const getContributionValues = (suggestedPrice: number, curr: 'USD' | 'BRL' = currency as 'USD' | 'BRL') => {
+    const basePrice = curr === 'BRL' ? Math.round(suggestedPrice * rate) : suggestedPrice;
+    const min = basePrice;
+    const amplified = Math.round(basePrice * 1.5);
+    const double = basePrice * 2;
     return { min, amplified, double };
   };
 
@@ -172,6 +187,7 @@ export const InitiativesPage: React.FC = () => {
     setSupporterPhone('');
     setAdditionalNotes('');
     setCheckoutError('');
+    setSelectedCurrency(currency as 'USD' | 'BRL' || 'USD');
   };
 
   const handleCompleteDonation = async (e: React.FormEvent) => {
@@ -189,8 +205,8 @@ export const InitiativesPage: React.FC = () => {
     setCheckoutError('');
 
     try {
-      let finalAmount = selectedInitiative.suggested_price;
-      const { min, amplified, double } = getContributionValues(selectedInitiative.suggested_price);
+      const { min, amplified, double } = getContributionValues(selectedInitiative.suggested_price, selectedCurrency);
+      let finalAmount = min;
       
       if (donationTier === 'amplified') finalAmount = amplified;
       if (donationTier === 'double') finalAmount = double;
@@ -204,7 +220,7 @@ export const InitiativesPage: React.FC = () => {
         body: JSON.stringify({
           initiative_id: selectedInitiative.id,
           amount: finalAmount,
-          currency: currency, // global CurrencyContext (USD or BRL)
+          currency: selectedCurrency, // dynamic local currency selector
           name: supporterName,
           email: supporterEmail,
           phone: supporterPhone,
@@ -439,128 +455,166 @@ export const InitiativesPage: React.FC = () => {
               <form onSubmit={handleCompleteDonation} className="space-y-6">
                 {checkoutStep === 'tier' ? (
                   // --- STEP 1: VALUE TIER SELECTION ---
-                  <div className="space-y-6">
-                    <div>
-                      <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
-                        Apoiar com {selectedInitiative.type === 'item' ? 'Símbolo' : 'Atividade'}
-                      </span>
-                      <h3 className="text-2xl font-black text-primary leading-tight">{selectedInitiative.title}</h3>
-                    </div>
-
-                    {/* Impact Summary Frame */}
-                    <div className="bg-accent/5 border border-accent/15 rounded-2xl p-5 text-center">
-                      <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Seu Impacto Garantido com essa Escolha</p>
-                      <p className="text-sm font-bold text-primary">{selectedInitiative.impact_description}</p>
-                    </div>
-
-                    {/* Price Psychology Framework Tiers */}
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Escolha seu Nível de Contribuição</label>
-                      <div className="grid grid-cols-1 gap-3">
-                        {/* Suggested Min Tier */}
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('suggested')}
-                          className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
-                            donationTier === 'suggested' 
-                              ? 'border-accent bg-accent/5' 
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-sm font-black text-primary">Apoio Recomendado</p>
-                            <p className="text-xs text-slate-500 font-bold">Cobre o custo de confecção e doa o valor integral excedente.</p>
-                          </div>
-                          <span className="text-lg font-black text-primary">{formatAmount(selectedInitiative.suggested_price)}</span>
-                        </button>
-
-                        {/* Amplified Tier */}
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('amplified')}
-                          className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
-                            donationTier === 'amplified' 
-                              ? 'border-accent bg-accent/5' 
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-sm font-black text-primary">Apoio Ampliado</p>
-                            <p className="text-xs text-slate-500 font-bold">Aumenta o impacto direto com fundos extras.</p>
-                          </div>
-                          <span className="text-lg font-black text-primary">
-                            {formatAmount(getContributionValues(selectedInitiative.suggested_price).amplified)}
+                  (() => {
+                    const modalTiers = getContributionValues(selectedInitiative.suggested_price, selectedCurrency);
+                    return (
+                      <div className="space-y-6">
+                        <div>
+                          <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
+                            Apoiar com {selectedInitiative.type === 'item' ? 'Símbolo' : 'Atividade'}
                           </span>
-                        </button>
+                          <h3 className="text-2xl font-black text-primary leading-tight">{selectedInitiative.title}</h3>
+                        </div>
 
-                        {/* Double Tier */}
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('double')}
-                          className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
-                            donationTier === 'double' 
-                              ? 'border-accent bg-accent/5' 
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-sm font-black text-primary">Apoio Duplo (Impacto Total)</p>
-                            <p className="text-xs text-slate-500 font-bold">Dobra o valor de impacto direto destinado à causa.</p>
-                          </div>
-                          <span className="text-lg font-black text-primary">
-                            {formatAmount(getContributionValues(selectedInitiative.suggested_price).double)}
-                          </span>
-                        </button>
+                        {/* Impact Summary Frame */}
+                        <div className="bg-accent/5 border border-accent/15 rounded-2xl p-5 text-center">
+                          <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Seu Impacto Garantido com essa Escolha</p>
+                          <p className="text-sm font-bold text-primary">{selectedInitiative.impact_description}</p>
+                        </div>
 
-                        {/* Custom Value */}
-                        <button 
-                          type="button"
-                          onClick={() => setDonationTier('custom')}
-                          className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
-                            donationTier === 'custom' 
-                              ? 'border-accent bg-accent/5' 
-                              : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
-                          }`}
-                        >
-                          <div>
-                            <p className="text-sm font-black text-primary">Valor Livre</p>
-                            <p className="text-xs text-slate-500 font-bold">Defina você mesmo o montante adicional de doação.</p>
+                        {/* Currency Selector Switch */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Moeda e Gateway de Pagamento</label>
+                          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedCurrency('USD')}
+                              className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
+                                selectedCurrency === 'USD' 
+                                  ? 'bg-white dark:bg-slate-700 shadow-md text-indigo-600 dark:text-indigo-400 border border-slate-200/50' 
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                              }`}
+                              title="USD (Stripe)"
+                            >
+                              <span className="material-symbols-outlined text-lg">credit_card</span>
+                              <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇺🇸</span>
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedCurrency('BRL')}
+                              className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
+                                selectedCurrency === 'BRL' 
+                                  ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-blue-400 border border-slate-200/50' 
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                              }`}
+                              title="BRL (Mercado Pago)"
+                            >
+                              <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                              <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇧🇷</span>
+                            </button>
                           </div>
-                          <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">Outro valor</span>
+                        </div>
+
+                        {/* Price Psychology Framework Tiers */}
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Escolha seu Nível de Contribuição</label>
+                          <div className="grid grid-cols-1 gap-3">
+                            {/* Suggested Min Tier */}
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('suggested')}
+                              className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
+                                donationTier === 'suggested' 
+                                  ? 'border-accent bg-accent/5' 
+                                  : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-black text-primary">Apoio Recomendado</p>
+                                <p className="text-xs text-slate-500 font-bold">Cobre o custo de confecção e doa o valor integral excedente.</p>
+                              </div>
+                              <span className="text-lg font-black text-primary">{formatCurrencyValue(modalTiers.min, selectedCurrency)}</span>
+                            </button>
+
+                            {/* Amplified Tier */}
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('amplified')}
+                              className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
+                                donationTier === 'amplified' 
+                                  ? 'border-accent bg-accent/5' 
+                                  : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-black text-primary">Apoio Ampliado</p>
+                                <p className="text-xs text-slate-500 font-bold">Aumenta o impacto direto com fundos extras.</p>
+                              </div>
+                              <span className="text-lg font-black text-primary">
+                                {formatCurrencyValue(modalTiers.amplified, selectedCurrency)}
+                              </span>
+                            </button>
+
+                            {/* Double Tier */}
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('double')}
+                              className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
+                                donationTier === 'double' 
+                                  ? 'border-accent bg-accent/5' 
+                                  : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-black text-primary">Apoio Duplo (Impacto Total)</p>
+                                <p className="text-xs text-slate-500 font-bold">Dobra o valor de impacto direto destinado à causa.</p>
+                              </div>
+                              <span className="text-lg font-black text-primary">
+                                {formatCurrencyValue(modalTiers.double, selectedCurrency)}
+                              </span>
+                            </button>
+
+                            {/* Custom Value */}
+                            <button 
+                              type="button"
+                              onClick={() => setDonationTier('custom')}
+                              className={`p-4 rounded-xl border-2 text-left flex justify-between items-center transition-all ${
+                                donationTier === 'custom' 
+                                  ? 'border-accent bg-accent/5' 
+                                  : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-black text-primary">Valor Livre</p>
+                                <p className="text-xs text-slate-500 font-bold">Defina você mesmo o montante adicional de doação.</p>
+                              </div>
+                              <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">Outro valor</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Custom Donation Input */}
+                        {donationTier === 'custom' && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="relative"
+                          >
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">
+                              {selectedCurrency === 'BRL' ? 'R$' : '$'}
+                            </div>
+                            <input 
+                              required
+                              type="number"
+                              value={customDonation}
+                              onChange={(e) => setCustomDonation(e.target.value)}
+                              placeholder={`Mínimo de ${formatCurrencyValue(modalTiers.min, selectedCurrency)}`}
+                              className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-4 pl-12 pr-6 outline-none font-bold text-slate-800"
+                            />
+                          </motion.div>
+                        )}
+
+                        {/* Action Button */}
+                        <button 
+                          type="submit"
+                          className="w-full py-5 rounded-2xl bg-primary hover:bg-slate-800 text-white font-black text-lg transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3"
+                        >
+                          <span>Proceder com a Contribuição</span>
+                          <span className="material-symbols-outlined">arrow_forward</span>
                         </button>
                       </div>
-                    </div>
-
-                    {/* Custom Donation Input */}
-                    {donationTier === 'custom' && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="relative"
-                      >
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">
-                          {currency === 'BRL' ? 'R$' : '$'}
-                        </div>
-                        <input 
-                          required
-                          type="number"
-                          value={customDonation}
-                          onChange={(e) => setCustomDonation(e.target.value)}
-                          placeholder={`Mínimo de ${formatAmount(selectedInitiative.suggested_price)}`}
-                          className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-4 pl-12 pr-6 outline-none font-bold text-slate-800"
-                        />
-                      </motion.div>
-                    )}
-
-                    {/* Action Button */}
-                    <button 
-                      type="submit"
-                      className="w-full py-5 rounded-2xl bg-primary hover:bg-slate-800 text-white font-black text-lg transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3"
-                    >
-                      <span>Proceder com a Contribuição</span>
-                      <span className="material-symbols-outlined">arrow_forward</span>
-                    </button>
-                  </div>
+                    );
+                  })()
                 ) : (
                   // --- STEP 2: SUPPORTER LOGISTICAL DETAILS ---
                   <div className="space-y-6">
@@ -640,7 +694,7 @@ export const InitiativesPage: React.FC = () => {
                     <div className="bg-success/5 border border-success/15 rounded-xl p-4 text-center flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined text-success text-lg">shield_with_heart</span>
                       <span className="text-[10px] font-black text-success uppercase tracking-widest">
-                        Processado em ambiente de segurança homologado ({currency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
+                        Processado em ambiente de segurança homologado ({selectedCurrency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
                       </span>
                     </div>
 
