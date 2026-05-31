@@ -1159,6 +1159,22 @@ app.post('/api/checkout/create-session', async (req, res) => {
       imageUrl = initRows[0].image_url;
     }
 
+    // Filter out any Base64 strings or invalid URLs for payment gateway compatibility (Stripe limits to 2048 chars)
+    const stripeImages = [];
+    let cleanImageUrl = '';
+    if (imageUrl && typeof imageUrl === 'string') {
+      const parts = imageUrl.split(',');
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && !trimmed.startsWith('data:') && trimmed.length <= 2048) {
+          stripeImages.push(trimmed);
+        }
+      }
+    }
+    if (stripeImages.length > 0) {
+      cleanImageUrl = stripeImages[0];
+    }
+
     // Unique reference to keep track of the transaction
     const transactionId = `tx-${Math.random().toString(36).substring(2, 11)}`;
 
@@ -1173,7 +1189,7 @@ app.post('/api/checkout/create-session', async (req, res) => {
             id: project_id ? project_id : initiative_id,
             title: title,
             description: description ? description.substring(0, 255) : '',
-            picture_url: imageUrl,
+            picture_url: cleanImageUrl || null,
             category_id: 'donations',
             quantity: 1,
             unit_price: value
@@ -1232,7 +1248,7 @@ app.post('/api/checkout/create-session', async (req, res) => {
               currency: 'usd',
               product_data: {
                 name: title,
-                images: imageUrl ? [imageUrl] : [],
+                images: stripeImages,
                 description: description ? description.substring(0, 255) : '',
               },
               unit_amount: Math.round(value * 100), // Stripe counts in cents
