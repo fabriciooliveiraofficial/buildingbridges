@@ -154,7 +154,9 @@ app.use((req, res, next) => {
 app.use('/api', (req, res, next) => {
   if (!pool) {
     return res.status(500).json({
-      error: 'Conexão com o banco de dados MySQL falhou. Por favor, verifique se o serviço local do MySQL (ex: XAMPP, WampServer ou MySQL nativo) está rodando na porta 3306 e se as credenciais no arquivo .env estão corretas. (Database connection failed. Please ensure your local MySQL server is running and configured correctly in your .env file).'
+      error: 'Conexão com o banco de dados MySQL falhou. (Database connection failed).',
+      details: dbError || 'Pool not initialized. Make sure initializeDatabase() was called.',
+      tip: 'Verifique se o seu servidor MySQL está rodando e se os dados de host, usuário, senha e nome do banco no arquivo .env de produção estão 100% corretos.'
     });
   }
   next();
@@ -207,6 +209,8 @@ const dbConfig = {
 };
 
 let pool;
+let dbError = null;
+let isInitializing = false;
 
 // Helper to generate URL-safe slugs
 function slugify(text) {
@@ -223,6 +227,9 @@ function slugify(text) {
 
 // Initialize database connection and setup tables/seed data automatically
 async function initializeDatabase() {
+  if (pool) return;
+  if (isInitializing) return;
+  isInitializing = true;
   try {
     // Attempt connecting to the server first without database to create it if missing (for local testing)
     try {
@@ -242,6 +249,20 @@ async function initializeDatabase() {
     // Now establish connection pool with the specific database
     pool = mysql.createPool(dbConfig);
     console.log('Connected to MySQL connection pool successfully.');
+
+    // Verify connection immediately to catch credentials or network errors in production
+    try {
+      const connection = await pool.getConnection();
+      connection.release();
+      console.log('Database connection verified successfully.');
+      dbError = null;
+    } catch (connectionError) {
+      console.error('Failed to connect to MySQL database:', connectionError.message);
+      dbError = connectionError.message;
+      pool = null; // Reset pool so the health check middleware intercepts failures
+      isInitializing = false;
+      return;
+    }
 
     // Create the 'projects' table if it does not exist (image_url changed to LONGTEXT for Base64 support)
     await pool.query(`
@@ -515,8 +536,15 @@ async function initializeDatabase() {
     }
   } catch (error) {
     console.error('Failed to initialize database:', error);
+    dbError = error.message;
+    pool = null;
+  } finally {
+    isInitializing = false;
   }
 }
+
+// Initialize database connection immediately in the background upon loading the file
+initializeDatabase();
 
 // --- DATABASE TRANSACTION HELPER FOR WEBHOOKS & MANUAL REDIRECTS ---
 
