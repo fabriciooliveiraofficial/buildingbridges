@@ -251,26 +251,28 @@ export const CheckoutPage: React.FC = () => {
                   <button 
                     type="button"
                     onClick={() => setSelectedCurrency('USD')}
-                    className={`flex-1 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
                       selectedCurrency === 'USD' 
-                        ? 'bg-white shadow text-indigo-600' 
-                        : 'text-slate-500 hover:text-slate-800'
+                        ? 'bg-white dark:bg-slate-700 shadow-md text-indigo-600 dark:text-indigo-400 border border-slate-200/50' 
+                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
+                    title="USD (Stripe)"
                   >
-                    <span className="material-symbols-outlined text-sm">credit_card</span>
-                    USD (Stripe)
+                    <span className="material-symbols-outlined text-lg">credit_card</span>
+                    <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇺🇸</span>
                   </button>
                   <button 
                     type="button"
                     onClick={() => setSelectedCurrency('BRL')}
-                    className={`flex-1 rounded-lg py-2 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 rounded-lg py-2.5 transition-all flex items-center justify-center gap-3 ${
                       selectedCurrency === 'BRL' 
-                        ? 'bg-white shadow text-blue-600' 
-                        : 'text-slate-500 hover:text-slate-800'
+                        ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-blue-400 border border-slate-200/50' 
+                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
+                    title="BRL (Mercado Pago)"
                   >
-                    <span className="material-symbols-outlined text-sm">payments</span>
-                    BRL (Mercado Pago)
+                    <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                    <span className="flex items-center justify-center bg-slate-50 dark:bg-slate-800 size-6 rounded-full text-xs border border-slate-100 dark:border-slate-900 shadow-sm font-normal">🇧🇷</span>
                   </button>
                 </div>
               </div>
