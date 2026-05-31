@@ -26,14 +26,12 @@ export const HomePage: React.FC = () => {
     const fetchTopProjects = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('projects').select('*').limit(3);
-        
-        if (error && !error.message?.includes('Failed to fetch')) {
-          console.error('Error fetching top projects:', error);
-        }
+        const response = await fetch('/api/projects?limit=3');
+        if (!response.ok) throw new Error('Failed to fetch top projects');
+        const data = await response.json();
 
         if (data && data.length > 0) {
-          setProjects(data);
+          setProjects(data.slice(0, 3));
         }
       } catch (err) {
         // Silencing network errors to avoid console spam when dev credentials aren't fully set up

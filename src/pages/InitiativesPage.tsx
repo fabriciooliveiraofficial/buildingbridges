@@ -67,11 +67,13 @@ export const InitiativesPage: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: initData, error: initError } = await supabase.from('initiatives').select('*');
-        if (initError) console.error('Error fetching initiatives:', initError);
+        const initResponse = await fetch('/api/initiatives');
+        if (!initResponse.ok) throw new Error('Failed to fetch initiatives');
+        const initData = await initResponse.json();
         
-        const { data: projData, error: projError } = await supabase.from('projects').select('*');
-        if (projError) console.error('Error fetching projects:', projError);
+        const projResponse = await fetch('/api/projects');
+        if (!projResponse.ok) throw new Error('Failed to fetch projects');
+        const projData = await projResponse.json();
 
         if (projData) {
           const projMap: Record<string, string> = {};
@@ -128,8 +130,11 @@ export const InitiativesPage: React.FC = () => {
           setShowReceiptModal(true);
           
           // Re-fetch initiatives data to show updated progress amounts immediately
-          const { data: updatedInit } = await supabase.from('initiatives').select('*');
-          if (updatedInit) setInitiatives(updatedInit);
+          const updateResponse = await fetch('/api/initiatives');
+          if (updateResponse.ok) {
+            const updatedInit = await updateResponse.json();
+            setInitiatives(updatedInit);
+          }
         } catch (err: any) {
           console.error('[VERIFICATION ERROR]', err);
           setVerificationError(err.message || 'Houve uma falha ao conciliar o seu apoio. Por favor, contate o administrador.');

@@ -79,11 +79,9 @@ export const ImpactPage: React.FC = () => {
           return;
         }
 
-        const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
-        
-        if (error && !error.message?.includes('Failed to fetch')) {
-          console.error('Error fetching project:', error);
-        }
+        const response = await fetch(`/api/projects/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch project from database.');
+        const data = await response.json();
         
         if (data) {
           setProject(data);
@@ -150,8 +148,11 @@ export const ImpactPage: React.FC = () => {
           setShowReceiptModal(true);
           
           // Re-fetch project details dynamically to show updated progress immediately
-          const { data: updatedProj } = await supabase.from('projects').select('*').eq('id', id).single();
-          if (updatedProj) setProject(updatedProj);
+          const updateResponse = await fetch(`/api/projects/${id}`);
+          if (updateResponse.ok) {
+            const updatedProj = await updateResponse.json();
+            setProject(updatedProj);
+          }
         } catch (err: any) {
           console.error('[VERIFICATION ERROR]', err);
           setVerificationError(err.message || 'Houve uma falha ao conciliar o seu apoio. Por favor, contate o administrador.');

@@ -14,15 +14,11 @@ export const ProjectsPage: React.FC = () => {
     const fetchProjects = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('projects').select('*');
+        const response = await fetch('/api/projects');
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
         
-        if (error && 
-            error.message !== 'Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the settings panel.' &&
-            !error.message?.includes('Failed to fetch')) {
-          console.error('Error fetching projects:', error);
-        }
-        
-        // Fallback data if Supabase is empty or fails
+        // Fallback data if API is empty or fails
         const fallbackProjects = [
           {
             id: 'rio-grande',
