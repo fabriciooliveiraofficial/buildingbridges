@@ -190,7 +190,7 @@ export const CheckoutPage: React.FC = () => {
   const selectedProjDetails = projectsList.find(p => p.id === selectedProject);
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 lg:py-12">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
       <SEO 
         fallbackTitle="Doe Agora | Apoio Seguro | Building Bridges" 
         fallbackDescription="Contribua com nossas ações humanitárias em tempo real. Apoio seguro processado por Stripe (USD) e Mercado Pago (BRL)."
