@@ -6,7 +6,7 @@
 // answers with its own title, description, canonical, robots and Open Graph tags.
 
 export const SITE_NAME = 'Building Bridges Foundation';
-export const DEFAULT_IMAGE_PATH = '/og-image.png';
+export const DEFAULT_IMAGE_PATH = '/share/og-image.png'; // served by Node (see server.js), independent of the web server's static-file layer
 export const DEFAULT_IMAGE_SIZE = { width: 1200, height: 630 };
 export const DEFAULT_IMAGE_ALT = 'Building Bridges Foundation logo — Touching Nations, Changing Lives!';
 

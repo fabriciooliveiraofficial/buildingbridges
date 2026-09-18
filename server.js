@@ -1764,6 +1764,18 @@ app.get('/sitemap.xml', async (req, res) => {
   res.set('Cache-Control', 'public, max-age=3600').type('application/xml').send(buildSitemapXml(SITE_URL, projects));
 });
 
+// Link-preview image and icons (Open Graph / Twitter / favicon). They are served by Node under their own path on
+// purpose: on this hosting (LiteSpeed + Passenger) the web server in front of Node answers root-level static file
+// names (/og-image.png, /favicon.ico ...) by itself, from a cache that can stay stale after a deploy and return 404
+// for files that already exist in the app folder. A dedicated path always reaches this handler.
+const SHARE_FILES = { 'og-image.png': 'image/png', 'icon-192.png': 'image/png', 'icon-512.png': 'image/png', 'apple-touch-icon.png': 'image/png', 'favicon.ico': 'image/x-icon' };
+app.get('/share/:file', (req, res) => {
+  const type = SHARE_FILES[req.params.file];
+  const file = type && [path.join(__dirname, 'dist', req.params.file), path.join(__dirname, 'public', req.params.file)].find((f) => fs.existsSync(f));
+  if (!file) return res.status(404).type('text/plain').send('Not found');
+  res.set('Cache-Control', 'public, max-age=86400').type(type).sendFile(file);
+});
+
 const clientBuildDir = path.join(__dirname, 'dist');
 if (fs.existsSync(clientBuildDir)) {
   // index: false -> "/" also goes through the SEO handler below instead of the raw index.html

@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 
 // Canonical address of the site. Keep in sync with SITE_URL in server.js (which builds the tags crawlers see).
 const SITE_URL = ((import.meta as any).env?.VITE_SITE_URL || 'https://buildingbridgesbrusa.org').replace(/\/+$/, '');
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
+const DEFAULT_IMAGE = `${SITE_URL}/share/og-image.png`;
 const DEFAULT_IMAGE_ALT = 'Building Bridges Foundation logo — Touching Nations, Changing Lives!';
 
 const OG_LOCALES: Record<string, string> = { en: 'en_US', pt: 'pt_BR', es: 'es_MX' };
