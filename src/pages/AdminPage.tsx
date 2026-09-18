@@ -338,7 +338,7 @@ export const AdminPage: React.FC = () => {
 
       setMessage({ 
         type: 'success', 
-        text: `${type === 'mission' ? 'Missão' : 'Iniciativa'} excluída com sucesso!` 
+        text: `${type === 'mission' ? 'Projeto excluído' : 'Iniciativa excluída'} com sucesso!` 
       });
       
       // Refresh lists
@@ -371,8 +371,8 @@ export const AdminPage: React.FC = () => {
 
       if (activeConsole === 'mission') {
         // ================== PROCESS MISSION (PROJECT) ==================
-        if (!formData.name || !formData.goal_amount) {
-          throw new Error('Nome e Meta de Arrecadação são obrigatórios.');
+        if (!formData.name) {
+          throw new Error('O nome do projeto é obrigatório.');
         }
 
         const budgetJson = budgetRows
@@ -382,7 +382,6 @@ export const AdminPage: React.FC = () => {
         const projectData = {
           name: formData.name,
           description: formData.description,
-          goal_amount: parseFloat(formData.goal_amount),
           image_url: savedImageUrl,
           status: formData.status,
           category: formData.category,
@@ -403,7 +402,7 @@ export const AdminPage: React.FC = () => {
 
         setMessage({ 
           type: 'success', 
-          text: `Missão Humanitária ${editingId ? 'atualizada' : 'publicada'} com sucesso!` 
+          text: `Projeto Humanitário ${editingId ? 'atualizado' : 'publicado'} com sucesso!` 
         });
         
         // Return to list and reload
@@ -471,7 +470,7 @@ export const AdminPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-primary tracking-tight">Painel Administrativo da ONG</h1>
-            <p className="text-slate-500 font-bold text-sm mt-0.5">Gerencie missões, ações solidárias e recursos cadastrados</p>
+            <p className="text-slate-500 font-bold text-sm mt-0.5">Gerencie projetos, ações solidárias e recursos cadastrados</p>
           </div>
         </div>
 
@@ -486,7 +485,7 @@ export const AdminPage: React.FC = () => {
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Missões
+            Projetos
           </button>
           <button 
             type="button"
@@ -593,7 +592,7 @@ export const AdminPage: React.FC = () => {
                         </td>
                         <td className="py-4 px-4 space-y-0.5">
                           <p className="font-bold text-slate-800">{p.initiative_title || 'Ação Solidária'}</p>
-                          <p className="text-[10px] text-slate-400 uppercase font-black">Missão: {p.project_name || 'Geral'}</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-black">Projeto: {p.project_name || 'Geral'}</p>
                         </td>
                         <td className="py-4 px-4 text-right font-black text-slate-900">
                           {p.currency === 'BRL' ? 'R$' : '$'} {parseFloat(p.pledge_amount).toFixed(2)}
@@ -668,7 +667,7 @@ export const AdminPage: React.FC = () => {
               Voltar para a Lista
             </button>
             <h3 className="text-lg font-black text-primary uppercase">
-              {editingId ? 'Editar' : 'Cadastrar'} {activeConsole === 'mission' ? 'Missão' : 'Iniciativa'}
+              {editingId ? 'Editar' : 'Cadastrar'} {activeConsole === 'mission' ? 'Projeto' : 'Iniciativa'}
             </h3>
           </div>
 
@@ -678,7 +677,7 @@ export const AdminPage: React.FC = () => {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Nome da Missão</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Nome do Projeto</label>
                     <input 
                       required
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all text-slate-800"
@@ -701,7 +700,7 @@ export const AdminPage: React.FC = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Status da Missão</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Status do Projeto</label>
                     <select 
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all appearance-none text-slate-800"
                       value={formData.status}
@@ -727,25 +726,10 @@ export const AdminPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Meta de Arrecadação (USD)</label>
-                    <div className="relative">
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                      <input 
-                        required
-                        type="number"
-                        className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 pl-12 pr-6 outline-none font-bold transition-all text-slate-800"
-                        value={formData.goal_amount}
-                        onChange={(e) => setFormData({...formData, goal_amount: e.target.value})}
-                        placeholder="50000"
-                      />
-                    </div>
-                  </div>
-
                   {/* Premium Multi-Image Upload & Gallery (Up to 5 images) */}
                   <div className="space-y-2 col-span-1 md:col-span-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest block flex justify-between items-center">
-                      <span>Galeria de Imagens da Missão ({formImages.length}/5)</span>
+                      <span>Galeria de Imagens do Projeto ({formImages.length}/5)</span>
                       <span className="text-[10px] text-slate-400 italic font-bold">A primeira imagem será o destaque</span>
                     </label>
                     <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl p-6 space-y-4">
@@ -885,7 +869,7 @@ export const AdminPage: React.FC = () => {
 
                   {/* Linked Project Select */}
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Vincular à Missão Apoiada</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Vincular ao Projeto Apoiado</label>
                     <select 
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all appearance-none text-slate-800"
                       value={initiativeData.project_id}
@@ -895,7 +879,7 @@ export const AdminPage: React.FC = () => {
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                       {projectList.length === 0 && (
-                        <option value="">Nenhuma missão cadastrada</option>
+                        <option value="">Nenhum projeto cadastrado</option>
                       )}
                     </select>
                   </div>
@@ -1064,7 +1048,7 @@ export const AdminPage: React.FC = () => {
               type="submit" 
               className="w-full bg-accent hover:bg-orange-600 text-white py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-accent/20 flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? 'Salvando...' : isReadingFile ? 'Processando imagem...' : editingId ? 'Salvar Alterações' : activeConsole === 'mission' ? 'Publicar Missão' : 'Registrar Iniciativa'}
+              {loading ? 'Salvando...' : isReadingFile ? 'Processando imagem...' : editingId ? 'Salvar Alterações' : activeConsole === 'mission' ? 'Publicar Projeto' : 'Registrar Iniciativa'}
               {!loading && !isReadingFile && <span className="material-symbols-outlined">save</span>}
             </button>
           </form>
@@ -1075,11 +1059,11 @@ export const AdminPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 shrink-0">
             <div>
               <h3 className="text-xl font-black text-primary">
-                {activeConsole === 'mission' ? 'Missões Cadastradas' : 'Iniciativas de Apoio'}
+                {activeConsole === 'mission' ? 'Projetos Cadastrados' : 'Iniciativas de Apoio'}
               </h3>
               <p className="text-xs text-slate-500 font-bold mt-1">
                 {activeConsole === 'mission' 
-                  ? 'Gerencie missões humanitárias urgentes de auxílio a desastres.' 
+                  ? 'Gerencie projetos humanitários urgentes de auxílio a desastres.' 
                   : 'Gerencie itens e experiências disponíveis para compras e doações.'}
               </p>
             </div>
@@ -1089,14 +1073,14 @@ export const AdminPage: React.FC = () => {
               className="px-6 py-3.5 bg-accent hover:bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-accent/20 shrink-0"
             >
               <span className="material-symbols-outlined text-lg">add_circle</span>
-              {activeConsole === 'mission' ? 'Nova Missão' : 'Nova Iniciativa'}
+              {activeConsole === 'mission' ? 'Novo Projeto' : 'Nova Iniciativa'}
             </button>
           </div>
 
           {activeConsole === 'mission' ? (
             // --- PROJECTS/MISSIONS TABLE LIST ---
             missionsLoading ? (
-              <div className="py-12 text-center text-slate-400 font-bold">Carregando missões...</div>
+              <div className="py-12 text-center text-slate-400 font-bold">Carregando projetos...</div>
             ) : missionsList.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -1159,7 +1143,7 @@ export const AdminPage: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="py-16 text-center text-slate-400 font-bold">Nenhuma missão humanitária cadastrada.</div>
+              <div className="py-16 text-center text-slate-400 font-bold">Nenhum projeto humanitário cadastrado.</div>
             )
           ) : (
             // --- INITIATIVES TABLE LIST ---
@@ -1174,7 +1158,7 @@ export const AdminPage: React.FC = () => {
                       <th className="py-4 px-4">Título</th>
                       <th className="py-4 px-4">Tipo</th>
                       <th className="py-4 px-4">Contribuição</th>
-                      <th className="py-4 px-4">Missão Apoiada</th>
+                      <th className="py-4 px-4">Projeto Apoiado</th>
                       <th className="py-4 px-4">Status</th>
                       <th className="py-4 px-4 text-center">Ações</th>
                     </tr>
@@ -1263,7 +1247,7 @@ export const AdminPage: React.FC = () => {
               <h3 className="text-2xl font-black text-primary mb-2">Excluir Registro?</h3>
               <p className="text-slate-500 font-semibold text-sm leading-relaxed mb-6">
                 Você está prestes a excluir permanentemente o item: <strong className="text-slate-800">"{deleteConfirm.name}"</strong>.
-                {deleteConfirm.type === 'mission' && ' Essa exclusão em cascata apagará também todas as iniciativas vinculadas a esta missão.'} Esta ação não poderá ser desfeita.
+                {deleteConfirm.type === 'mission' && ' Essa exclusão em cascata apagará também todas as iniciativas vinculadas a este projeto.'} Esta ação não poderá ser desfeita.
               </p>
 
               <div className="flex gap-4">

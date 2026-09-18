@@ -11,7 +11,7 @@ export const PrivacyPage: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-8">1. Information We Collect</h2>
         <p>We collect information you provide directly to us, such as when you make a donation, sign up for our newsletter, or contact us for support.</p>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-8">2. How We Use Your Information</h2>
-        <p>We use the information we collect to process donations, provide transparency reports, and communicate with you about our impact and missions.</p>
+        <p>We use the information we collect to process donations, provide transparency reports, and communicate with you about our impact and projects.</p>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-8">3. Data Security</h2>
         <p>We implement a variety of security measures to maintain the safety of your personal information. All sensitive/credit information is transmitted via Secure Socket Layer (SSL) technology.</p>
       </div>

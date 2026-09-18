@@ -572,13 +572,13 @@ async function saveVerifiedContribution({
       // Fetch the registered contribution
       const [contributionRows] = await pool.query('SELECT * FROM `contributions` WHERE `transaction_reference` = ?', [transactionRef]);
       
-      let title = 'Missão Urgente';
+      let title = 'Projeto Urgente';
       if (initiativeId) {
         const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
         title = initiativeRows[0]?.title || 'Ação Solidária';
       } else if (projectId) {
         const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
-        title = projectRows[0]?.name || 'Missão Urgente';
+        title = projectRows[0]?.name || 'Projeto Urgente';
       }
       
       return {
@@ -632,13 +632,13 @@ async function saveVerifiedContribution({
     await dbConnection.commit();
     console.log(`[VERIFY HELPER SUCCESS] Contribution successfully registered: ${contributionId}`);
 
-    let title = 'Missão Urgente';
+    let title = 'Projeto Urgente';
     if (initiativeId) {
       const [initiativeRows] = await pool.query('SELECT title FROM `initiatives` WHERE `id` = ?', [initiativeId]);
       title = initiativeRows[0]?.title || 'Ação Solidária';
     } else if (projectId) {
       const [projectRows] = await pool.query('SELECT name FROM `projects` WHERE `id` = ?', [projectId]);
-      title = projectRows[0]?.name || 'Missão Urgente';
+      title = projectRows[0]?.name || 'Projeto Urgente';
     }
 
     return {
@@ -713,8 +713,8 @@ app.post('/api/projects', async (req, res) => {
   try {
     const { name, description, goal_amount, image_url, status, category, long_description, budget_json } = req.body;
     
-    if (!name || !goal_amount) {
-      return res.status(400).json({ error: 'Name and goal_amount are required fields.' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name is a required field.' });
     }
 
     // Generate a unique URL slug id from the project name
@@ -726,7 +726,7 @@ app.post('/api/projects', async (req, res) => {
       id,
       name,
       description: description || null,
-      goal_amount: parseFloat(goal_amount),
+      goal_amount: parseFloat(goal_amount) || 0.00,
       raised_amount: 0.00,
       image_url: image_url || null,
       status: status || 'active',
@@ -753,20 +753,23 @@ app.put('/api/projects/:id', async (req, res) => {
   try {
     const { name, description, goal_amount, image_url, status, category, long_description, budget_json } = req.body;
     
-    if (!name || !goal_amount) {
-      return res.status(400).json({ error: 'Name and goal_amount are required fields.' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name is a required field.' });
     }
 
     const projectData = {
       name,
       description: description || null,
-      goal_amount: parseFloat(goal_amount),
       image_url: image_url || null,
       status: status || 'active',
       category: category || null,
       long_description: long_description || null,
       budget_json: budget_json ? JSON.stringify(budget_json) : null
     };
+    // The goal is no longer edited from the admin form; only overwrite it when explicitly sent.
+    if (goal_amount !== undefined && goal_amount !== null && goal_amount !== '') {
+      projectData.goal_amount = parseFloat(goal_amount) || 0.00;
+    }
 
     await pool.query(
       'UPDATE `projects` SET ? WHERE `id` = ?',

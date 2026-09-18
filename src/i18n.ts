@@ -7,17 +7,15 @@ const resources = {
     translation: {
       "nav": {
         "home": "Home",
-        "missions": "Urgent Missions",
-        "impact": "Our Impact",
-        "transparency": "Transparency",
+        "missions": "Urgent Projects",
         "actionHub": "Action Hub",
         "donate": "DONATE NOW",
         "admin": "Admin Panel"
       },
       "hero": {
         "live": "Live Relief Active",
-        "title": "Rebuilding Cities,",
-        "subtitle": "Bridging Nations.",
+        "title": "Touching Nations,",
+        "subtitle": "Changing Lives!",
         "description": "Humanitarian fintech-style disaster relief providing transparent, real-time aid for communities in Brazil and the USA.",
         "cta": "Send Relief Now"
       },
@@ -28,10 +26,10 @@ const resources = {
         "proceed": "PROCEED TO SECURE PAY"
       },
       "missions": {
-        "title": "Urgent Missions",
+        "title": "Urgent Projects",
         "active": "Active Response",
-        "viewAll": "View All Missions",
-        "support": "Support Mission",
+        "viewAll": "View All Projects",
+        "support": "Support Project",
         "raised": "raised",
         "goal": "Goal",
         "funded": "FUNDED",
@@ -52,51 +50,26 @@ const resources = {
         }
       },
       "transparency": {
-        "title": "Transparency Through Fintech",
-        "subtitle": "Real-time accountability of every dollar deployed to disaster relief in Brazil and the USA. Our commitment is 100% visibility.",
-        "deployed": "Total Relief Deployed",
-        "impacted": "Lives Impacted",
-        "raised": "Total Raised",
-        "overhead": "Admin Overhead",
-        "overheadDesc": "Leading the humanitarian industry",
-        "ledger": "Transaction Ledger (Live)",
-        "liveFeed": "LIVE FEED",
-        "liveLedger": "Live Ledger Feed",
-        "audit": "View Audit Log",
-        "dna": "Transparency is our DNA.",
-        "instant": "Instant Transfers",
-        "instantDesc": "We use fintech rails to deliver cash directly to verified families in need within hours, not weeks.",
-        "map": "Real-time Impact Map",
-        "mapDesc": "Track every dollar spent through our live ledger and interactive mission updates.",
-        "crossBorder": "Cross-Border Relief",
-        "crossBorderDesc": "Seamlessly moving resources between the USA and Brazil with zero-fee structures.",
-        "liveMap": "Live Mission Map",
-        "liveMapDesc": "Interactive view of all current aid distributions across North and South America.",
-        "explore": "Explore Global Impact",
-        "flowTitle": "Fund Flow Analysis",
-        "flowSubtitle": "Tracing USD/BRL conversion to local impact zones",
-        "chartIncoming": "USD INCOMING",
-        "chartConversion": "FX CONVERSION (BRL)",
-        "chartDeployed": "RELIEF DEPLOYED",
-        "download": "Download 2023 Annual Report"
+        "liveFeed": "LIVE FEED"
       },
       "footer": {
         "privacy": "Privacy Policy",
         "terms": "Terms of Service",
         "reports": "Financial Reports",
         "contact": "Contact",
-        "rights": "© 2024 Building Bridges Non-Profit Organization. All rights reserved. Registered 501(c)(3)."
+        "legal": "Legal Notice",
+        "rights": "Building Bridges Foundation BR-USA is a nonprofit corporation of the State of Georgia. Federal 501(c)(3) exemption is still pending. Do not treat donations as deductible for U.S. income tax purposes until the IRS issues the recognition letter."
       },
       "projects": {
         "title": "Active Humanitarian Projects",
-        "subtitle": "Browse our active and completed humanitarian missions",
+        "subtitle": "Browse our active and completed humanitarian projects",
         "loading": "Loading...",
         "filter": "Filter",
-        "all": "All Missions",
+        "all": "All Projects",
         "active": "Active Only",
         "completed": "Completed",
         "archive": "Archive",
-        "notfound": "No missions found matching this filter."
+        "notfound": "No projects found matching this filter."
       },
       "impact": {
         "story": "The Story",
@@ -104,26 +77,26 @@ const resources = {
         "gallery": "Gallery",
         "location": "Location",
         "funding": "Funding Status",
-        "notfound": "Mission not found.",
-        "back": "Back to Missions",
-        "support": "Support this Mission",
+        "notfound": "Project not found.",
+        "back": "Back to Projects",
+        "support": "Support this Project",
         "impactZones": "Impact Zones"
       },
       "admin": {
         "title": "Admin Console",
-        "subtitle": "Register new humanitarian missions",
+        "subtitle": "Register new humanitarian projects",
         "form": {
-          "name": "Mission Name",
+          "name": "Project Name",
           "category": "Category Tag",
-          "status": "Mission Status",
+          "status": "Project Status",
           "desc": "Short Description (for cards)",
           "goal": "Goal Amount (USD)",
-          "image": "Mission Image",
+          "image": "Project Image",
           "upload": "Click to upload image",
           "story": "Case Study / The Story (Long text)",
           "budget": "Budget Breakdown",
           "addItem": "Add Item",
-          "publish": "Publish Mission",
+          "publish": "Publish Project",
           "creating": "Creating..."
         }
       },
@@ -179,12 +152,8 @@ const resources = {
           "description": "Explore our active and completed humanitarian projects. Your donation provides transparent disaster relief in real-time."
         },
         "initiatives": {
-          "title": "Action Hub & Urgent Missions | Building Bridges",
+          "title": "Action Hub & Urgent Projects | Building Bridges",
           "description": "Find out where we are acting right now. Urgent humanitarian response campaigns in Brazil and the United States."
-        },
-        "transparency": {
-          "title": "Real-time Transparency Ledger | Building Bridges",
-          "description": "Track every donation dollar with fintech-grade visibility. Rebuilding cities and bridging nations through 100% transparency."
         },
         "impact": {
           "title": "Our Social Impact | Building Bridges",
@@ -201,17 +170,15 @@ const resources = {
     translation: {
       "nav": {
         "home": "Início",
-        "missions": "Missões Urgentes",
-        "impact": "Nosso Impacto",
-        "transparency": "Transparência",
+        "missions": "Projetos Urgentes",
         "actionHub": "Hub de Ação",
         "donate": "DOE AGORA",
         "admin": "Painel Admin"
       },
       "hero": {
         "live": "Ajuda ao Vivo Ativa",
-        "title": "Reconstruindo Cidades,",
-        "subtitle": "Unindo Nações.",
+        "title": "Alcançando Nações,",
+        "subtitle": "Tocando Vidas!",
         "description": "Ajuda humanitária estilo fintech para desastres, fornecendo auxílio transparente e em tempo real para comunidades no Brasil e nos EUA.",
         "cta": "Enviar Ajuda Agora"
       },
@@ -222,10 +189,10 @@ const resources = {
         "proceed": "DOAÇÃO SEGURA"
       },
       "missions": {
-        "title": "Missões Urgentes",
+        "title": "Projetos Urgentes",
         "active": "Resposta Ativa",
-        "viewAll": "Ver Todas as Missões",
-        "support": "Apoiar Missão",
+        "viewAll": "Ver Todos os Projetos",
+        "support": "Apoiar Projeto",
         "raised": "arrecadado",
         "goal": "Meta",
         "funded": "FINANCIADO",
@@ -246,51 +213,26 @@ const resources = {
         }
       },
       "transparency": {
-        "title": "Transparência Através de Fintech",
-        "subtitle": "Responsabilidade em tempo real de cada centavo usado para alívio de desastres no Brasil e nos EUA. Nosso compromisso é 100% de visibilidade.",
-        "deployed": "Total de Ajuda Enviada",
-        "impacted": "Vidas Impactadas",
-        "raised": "Total Arrecadado",
-        "overhead": "Custos Administrativos",
-        "overheadDesc": "Liderando a indústria humanitária",
-        "ledger": "Livro de Transações (Ao Vivo)",
-        "liveFeed": "FEED AO VIVO",
-        "liveLedger": "Fluxo do Livro de Razão ao Vivo",
-        "audit": "Ver Log de Auditoria",
-        "dna": "Transparência é o nosso DNA.",
-        "instant": "Transferências Instantâneas",
-        "instantDesc": "Usamos infraestrutura fintech para entregar dinheiro diretamente a famílias verificadas em necessidade em horas, não semanas.",
-        "map": "Mapa de Impacto em Tempo Real",
-        "mapDesc": "Acompanhe cada dólar gasto através do nosso livro-razão ao vivo e atualizações interativas de missões.",
-        "crossBorder": "Ajuda Transfronteiriça",
-        "crossBorderDesc": "Movimentação contínua de recursos entre os EUA e o Brasil com estruturas de taxa zero.",
-        "liveMap": "Mapa de Missões ao Vivo",
-        "liveMapDesc": "Visão interativa de todas as distribuições de ajuda atuais na América do Norte e do Sul.",
-        "explore": "Explorar Impacto Global",
-        "flowTitle": "Análise de Fluxo de Fundos",
-        "flowSubtitle": "Rastreando a conversão USD/BRL para zonas de impacto local",
-        "chartIncoming": "ENTRADA USD",
-        "chartConversion": "CONVERSÃO FX (BRL)",
-        "chartDeployed": "AJUDA IMPLEMENTADA",
-        "download": "Baixar Relatório Anual 2023"
+        "liveFeed": "FEED AO VIVO"
       },
       "footer": {
         "privacy": "Política de Privacidade",
         "terms": "Termos de Serviço",
         "reports": "Relatórios Financeiros",
         "contact": "Contato",
-        "rights": "© 2024 Organização Sem Fins Lucrativos Building Bridges. Todos os direitos reservados. Registrada 501(c)(3)."
+        "legal": "Aviso Legal",
+        "rights": "A Building Bridges Foundation BR-USA é uma corporação sem fins lucrativos do Estado da Geórgia. A isenção federal 501(c)(3) ainda está pendente. Não trate as doações como dedutíveis no imposto de renda americano até o IRS emitir a carta de reconhecimento."
       },
       "projects": {
         "title": "Projetos Humanitários Ativos",
-        "subtitle": "Explore nossas missões humanitárias ativas e concluídas",
+        "subtitle": "Explore nossos projetos humanitários ativos e concluídos",
         "loading": "Carregando...",
         "filter": "Filtrar",
-        "all": "Todas as Missões",
+        "all": "Todos os Projetos",
         "active": "Apenas Ativas",
         "completed": "Concluídas",
         "archive": "Arquivo",
-        "notfound": "Nenhuma missão encontrada com este filtro."
+        "notfound": "Nenhum projeto encontrado com este filtro."
       },
       "impact": {
         "story": "A História",
@@ -298,26 +240,26 @@ const resources = {
         "gallery": "Galeria",
         "location": "Localização",
         "funding": "Status do Financiamento",
-        "notfound": "Missão não encontrada.",
-        "back": "Voltar para Missões",
-        "support": "Apoiar esta Missão",
+        "notfound": "Projeto não encontrado.",
+        "back": "Voltar para Projetos",
+        "support": "Apoiar este Projeto",
         "impactZones": "Zonas de Impacto"
       },
       "admin": {
         "title": "Painel de Controle Administrador",
-        "subtitle": "Registrar novas missões humanitárias",
+        "subtitle": "Registrar novos projetos humanitários",
         "form": {
-          "name": "Nome da Missão",
+          "name": "Nome do Projeto",
           "category": "Etiqueta de Categoria",
-          "status": "Status da Missão",
+          "status": "Status do Projeto",
           "desc": "Descrição Curta (para os cartões)",
           "goal": "Valor da Meta (USD)",
-          "image": "Imagem da Missão",
+          "image": "Imagem do Projeto",
           "upload": "Clique para fazer o upload da imagem",
           "story": "Estudo de Caso / A História (Texto longo)",
           "budget": "Divisão do Orçamento",
           "addItem": "Adicionar Item",
-          "publish": "Publicar Missão",
+          "publish": "Publicar Projeto",
           "creating": "Criando..."
         }
       },
@@ -370,15 +312,11 @@ const resources = {
         },
         "projects": {
           "title": "Projetos Humanitários | Building Bridges",
-          "description": "Explore nossas missões humanitárias ativas e concluídas. Sua doação apoia a reconstrução de cidades e o alívio transparente de desastres."
+          "description": "Explore nossos projetos humanitários ativos e concluídos. Sua doação apoia a reconstrução de cidades e o alívio transparente de desastres."
         },
         "initiatives": {
-          "title": "Hub de Ação e Missões Urgentes | Building Bridges",
+          "title": "Hub de Ação e Projetos Urgentes | Building Bridges",
           "description": "Descubra nossas respostas ativas a crises humanitárias e desastres naturais no Brasil e nos Estados Unidos. Faça a diferença."
-        },
-        "transparency": {
-          "title": "Transparência em Tempo Real | Building Bridges",
-          "description": "Acompanhe cada centavo doado através do nosso livro de transações financeiras estilo fintech. Transparência de ponta a ponta."
         },
         "impact": {
           "title": "Nosso Impacto Social | Building Bridges",
@@ -395,17 +333,15 @@ const resources = {
     translation: {
       "nav": {
         "home": "Inicio",
-        "missions": "Misiones Urgentes",
-        "impact": "Nuestro Impacto",
-        "transparency": "Transparencia",
+        "missions": "Proyectos Urgentes",
         "actionHub": "Hub de Acción",
         "donate": "DONA AHORA",
         "admin": "Panel Admin"
       },
       "hero": {
         "live": "Ayuda en Vivo Activa",
-        "title": "Reconstruyendo Ciudades,",
-        "subtitle": "Uniendo Naciones.",
+        "title": "Alcanzando Naciones,",
+        "subtitle": "¡Tocando Vidas!",
         "description": "Ayuda humanitaria estilo fintech para desastres, proporcionando auxilio transparente y en tiempo real para comunidades en Brasil y EE. UU.",
         "cta": "Enviar Ayuda Ahora"
       },
@@ -416,10 +352,10 @@ const resources = {
         "proceed": "CONTINUAR AL PAGO SEGURO"
       },
       "missions": {
-        "title": "Misiones Urgentes",
+        "title": "Proyectos Urgentes",
         "active": "Respuesta Ativa",
-        "viewAll": "Ver Todas las Misiones",
-        "support": "Apoyar Misión",
+        "viewAll": "Ver Todos los Proyectos",
+        "support": "Apoyar Proyecto",
         "raised": "recaudado",
         "goal": "Meta",
         "funded": "FINANCIADO",
@@ -440,51 +376,26 @@ const resources = {
         }
       },
       "transparency": {
-        "title": "Transparencia a Través de Fintech",
-        "subtitle": "Responsabilidad en tiempo real de cada dólar desplegado para el alivio de desastres en Brasil y los EE. UU. Nuestro compromiso é 100% visibilidad.",
-        "deployed": "Total de Ayuda Desplegada",
-        "impacted": "Vidas Impactadas",
-        "raised": "Total Recaudado",
-        "overhead": "Gastos Administrativos",
-        "overheadDesc": "Liderando la industria humanitaria",
-        "ledger": "Libro de Transacciones (En Vivo)",
-        "liveFeed": "FEED EN VIVO",
-        "liveLedger": "Flujo del Libro Mayor en Vivo",
-        "audit": "Ver Log de Auditoría",
-        "dna": "La transparencia es nuestro ADN.",
-        "instant": "Transferencias Instantáneas",
-        "instantDesc": "Utilizamos infraestructura fintech para entregar dinero directamente a familias verificadas en necesidad en horas, no semanas.",
-        "map": "Mapa de Impacto en Tiempo Real",
-        "mapDesc": "Siga cada dólar gastado a través de nuestro libro de contabilidad en vivo y actualizaciones interactivas de misiones.",
-        "crossBorder": "Ayuda Transfronteriza",
-        "crossBorderDesc": "Movimiento fluido de recursos entre EE. UU. y Brasil con estructuras de tarifa cero.",
-        "liveMap": "Mapa de Misiones en Vivo",
-        "liveMapDesc": "Vista interactiva de todas las distribuciones de ayuda actuales en América del Norte y del Sur.",
-        "explore": "Explorar Impacto Global",
-        "flowTitle": "Análisis de Flujo de Fondos",
-        "flowSubtitle": "Rastreando la conversión USD/BRL a zonas de impacto local",
-        "chartIncoming": "ENTRADA USD",
-        "chartConversion": "CONVERSIÓN FX (BRL)",
-        "chartDeployed": "AYUDA DESPLEGADA",
-        "download": "Descargar Informe Anual 2023"
+        "liveFeed": "FEED EN VIVO"
       },
       "footer": {
         "privacy": "Política de Privacidad",
         "terms": "Términos de Servicio",
         "reports": "Informes Financieros",
         "contact": "Contacto",
-        "rights": "© 2024 Organización Sin Fines de Lucro Building Bridges. Todos los derechos reservados. Registrada 501(c)(3)."
+        "legal": "Aviso Legal",
+        "rights": "Building Bridges Foundation BR-USA es una corporación sin fines de lucro del Estado de Georgia. La exención federal 501(c)(3) aún está pendiente. No considere las donaciones como deducibles del impuesto sobre la renta de EE. UU. hasta que el IRS emita la carta de reconocimiento."
       },
       "projects": {
         "title": "Proyectos Humanitarios Activos",
-        "subtitle": "Explore nuestras misiones humanitarias activas y completadas",
+        "subtitle": "Explore nuestros proyectos humanitarios activos y completados",
         "loading": "Cargando...",
         "filter": "Filtrar",
-        "all": "Todas las Misiones",
+        "all": "Todos los Proyectos",
         "active": "Solo Activas",
         "completed": "Completadas",
         "archive": "Archivo",
-        "notfound": "No se encontraron misiones con este filtro."
+        "notfound": "No se encontraron proyectos con este filtro."
       },
       "impact": {
         "story": "La Historia",
@@ -492,26 +403,26 @@ const resources = {
         "gallery": "Galería",
         "location": "Ubicación",
         "funding": "Estado de Financiación",
-        "notfound": "Misión no encontrada.",
-        "back": "Volver a Misiones",
-        "support": "Apoyar esta Misión",
+        "notfound": "Proyecto no encontrado.",
+        "back": "Volver a Proyectos",
+        "support": "Apoyar este Proyecto",
         "impactZones": "Zonas de Impacto"
       },
       "admin": {
         "title": "Consola de Administrador",
-        "subtitle": "Registrar nuevas misiones humanitarias",
+        "subtitle": "Registrar nuevos proyectos humanitarios",
         "form": {
-          "name": "Nombre de la Misión",
+          "name": "Nombre del Proyecto",
           "category": "Etiqueta de Categoría",
-          "status": "Estado de la Misión",
+          "status": "Estado del Proyecto",
           "desc": "Descripción Corta (para tarjetas)",
           "goal": "Monto de la Meta (USD)",
-          "image": "Imagen de la Misión",
+          "image": "Imagen del Proyecto",
           "upload": "Haga clic para cargar la imagen",
           "story": "Estudio de Caso / La Historia (Texto largo)",
           "budget": "Desglose del Presupuesto",
           "addItem": "Añadir Item",
-          "publish": "Publicar Misión",
+          "publish": "Publicar Proyecto",
           "creating": "Creando..."
         }
       },
@@ -564,15 +475,11 @@ const resources = {
         },
         "projects": {
           "title": "Proyectos Humanitarios | Building Bridges",
-          "description": "Explore nuestras misiones humanitarias activas y completadas. Su donación apoya la reconstrucción de ciudades y el alivio transparente de desastres."
+          "description": "Explore nuestros proyectos humanitarios activos y completados. Su donación apoya la reconstrucción de ciudades y el alivio transparente de desastres."
         },
         "initiatives": {
-          "title": "Hub de Acción y Misiones Urgentes | Building Bridges",
+          "title": "Hub de Acción y Proyectos Urgentes | Building Bridges",
           "description": "Descubra nuestras respuestas activas a crisis humanitarias y desastres naturales en Brasil y Estados Unidos. Marque la diferencia hoy."
-        },
-        "transparency": {
-          "title": "Transparencia en Tiempo Real | Building Bridges",
-          "description": "Siga cada centavo donado a través de nuestro libro de transacciones financieras estilo fintech. Transparencia de extremo a extremo."
         },
         "impact": {
           "title": "Nuestro Impacto Social | Building Bridges",

@@ -10,7 +10,7 @@ import { Lightbox } from '../components/Lightbox';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
-  const { currency, formatAmount, rate } = useCurrency();
+  const { currency, rate } = useCurrency();
   const [donationAmount, setDonationAmount] = useState<string>('100');
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +45,6 @@ export const HomePage: React.FC = () => {
     fetchTopProjects();
   }, []);
 
-  const transactions = [
-    { id: 'TX-9021', amount: 250, location: 'Porto Alegre, BR', time: '2m ago' },
-    { id: 'TX-8842', amount: 1200, location: 'Houston, TX', time: '5m ago' },
-    { id: 'TX-7731', amount: 50, location: 'Manaus, AM', time: '12m ago' },
-    { id: 'TX-6612', amount: 500, location: 'New Orleans, LA', time: '15m ago' },
-  ];
-
   return (
     <div className="flex flex-col">
       <SEO titleKey="home" descriptionKey="home" />
@@ -84,9 +77,6 @@ export const HomePage: React.FC = () => {
               {t('hero.title')}<br />
               <span className="text-accent">{t('hero.subtitle')}</span>
             </h1>
-            <p className="text-lg lg:text-xl text-slate-300 max-w-xl mb-10 leading-relaxed">
-              {t('hero.description')}
-            </p>
             <Link 
               to="/projects" 
               className="inline-flex items-center gap-3 text-white font-bold hover:gap-5 transition-all group"
@@ -212,22 +202,6 @@ export const HomePage: React.FC = () => {
                         {project.description}
                       </p>
                       <div className="space-y-4 mt-auto">
-                        <div className="flex justify-between items-end">
-                          <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                            {Math.round((project.raised_amount / project.goal_amount) * 100)}% {t('missions.funded')}
-                          </div>
-                          <div className="text-sm font-black text-primary">
-                            {formatAmount(project.raised_amount)} <span className="text-slate-400">/ {formatAmount(project.goal_amount)}</span>
-                          </div>
-                        </div>
-                        <div className="h-3 w-full bg-primary/5 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${Math.min((project.raised_amount / project.goal_amount) * 100, 100)}%` }}
-                            transition={{ duration: 1, delay: 0.5 }}
-                            className="h-full bg-accent rounded-full"
-                          ></motion.div>
-                        </div>
                         <Link to={`/impact/${project.id}`} className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all text-center block">
                           {t('missions.support')}
                         </Link>
@@ -270,23 +244,7 @@ export const HomePage: React.FC = () => {
                       {t('missions.rio.desc')}
                     </p>
                     <div className="space-y-4">
-                      <div className="flex justify-between items-end">
-                        <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          75% {t('missions.funded')}
-                        </div>
-                        <div className="text-sm font-black text-primary dark:text-white">
-                          {formatAmount(375000)} <span className="text-slate-400">/ {formatAmount(500000)}</span>
-                        </div>
-                      </div>
-                      <div className="h-3 w-full bg-primary/5 dark:bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          whileInView={{ width: '75%' }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          className="h-full bg-accent rounded-full"
-                        ></motion.div>
-                      </div>
-                      <Link to="/impact" className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all text-center block">
+                      <Link to="/projects" className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/90 transition-all text-center block">
                         {t('missions.support')}
                       </Link>
                     </div>
@@ -295,91 +253,6 @@ export const HomePage: React.FC = () => {
                 {/* Additional Fallbacks omitted for brevity in multi_edit, or keep them if needed */}
               </>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Transparency Section */}
-      <section className="py-20 lg:py-32 bg-primary text-white overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-white/5 -skew-x-12 translate-x-1/2 hidden lg:block"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center">
-            <div>
-              <div className="text-accent font-black text-sm uppercase tracking-widest mb-4">{t('transparency.title')}</div>
-              <h2 className="text-3xl sm:text-4xl lg:text-6xl font-black mb-8 lg:mb-10 leading-tight">
-                {t('transparency.dna')}
-              </h2>
-              
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-4 sm:gap-8 mb-12">
-                <div className="p-5 sm:p-6 bg-white/5 rounded-2xl border border-white/10 flex flex-col justify-center min-h-[100px]">
-                  <div className="text-xl sm:text-2xl font-black text-accent mb-1 break-all xs:break-normal">{formatAmount(12400000)}</div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('transparency.deployed')}</div>
-                </div>
-                <div className="p-5 sm:p-6 bg-white/5 rounded-2xl border border-white/10 flex flex-col justify-center min-h-[100px]">
-                  <div className="text-xl sm:text-2xl font-black text-accent mb-1">850k+</div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('transparency.impacted')}</div>
-                </div>
-              </div>
-
-              <div className="space-y-8">
-                <div className="flex gap-6">
-                  <div className="size-12 bg-accent/20 rounded-xl flex items-center justify-center text-accent shrink-0">
-                    <span className="material-symbols-outlined">account_balance_wallet</span>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-black mb-2">{t('transparency.instant')}</h4>
-                    <p className="text-slate-400 text-sm leading-relaxed">{t('transparency.instantDesc')}</p>
-                  </div>
-                </div>
-                <div className="flex gap-6">
-                  <div className="size-12 bg-accent/20 rounded-xl flex items-center justify-center text-accent shrink-0">
-                    <span className="material-symbols-outlined">visibility</span>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-black mb-2">{t('transparency.map')}</h4>
-                    <p className="text-slate-400 text-sm leading-relaxed">{t('transparency.mapDesc')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-background-dark rounded-3xl border border-white/10 p-6 sm:p-8 shadow-2xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                <h3 className="text-lg sm:text-xl font-black flex items-center gap-3 truncate">
-                  <span className="material-symbols-outlined text-accent shrink-0">analytics</span>
-                  <span className="truncate">{t('transparency.ledger')}</span>
-                </h3>
-                <div className="flex items-center gap-2 px-3 py-1 bg-success/20 text-success rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest self-start sm:self-auto shrink-0">
-                  <span className="size-1.5 bg-success rounded-full animate-pulse"></span>
-                  {t('transparency.liveFeed')}
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                {transactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="size-10 bg-primary rounded-lg flex items-center justify-center text-slate-400">
-                        <span className="material-symbols-outlined text-xl">receipt_long</span>
-                      </div>
-                      <div>
-                        <div className="text-xs font-black text-slate-500">{tx.id}</div>
-                        <div className="text-sm font-bold">{tx.location}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-black text-accent">{formatAmount(tx.amount)}</div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase">{tx.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Link to="/impact" className="w-full py-4 bg-white text-primary rounded-xl font-black text-sm hover:bg-slate-100 transition-all text-center block">
-                {t('transparency.audit')}
-              </Link>
-            </div>
           </div>
         </div>
       </section>

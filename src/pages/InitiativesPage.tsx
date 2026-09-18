@@ -258,7 +258,7 @@ export const InitiativesPage: React.FC = () => {
           Apoie com uma <span className="text-accent">Iniciativa Solidária</span>
         </h1>
         <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed">
-          Nossa rede de voluntários cria produtos físicos e atividades incríveis para financiar as missões. Ao participar ou adquirir, **100% da arrecadação líquida** vai direto para saneamento, alimentação e abrigos no campo.
+          Nossa rede de voluntários cria produtos físicos e atividades incríveis para financiar os projetos. Ao participar ou adquirir, **100% da arrecadação líquida** vai direto para saneamento, alimentação e abrigos no campo.
         </p>
         
         {/* Filters */}
@@ -300,7 +300,6 @@ export const InitiativesPage: React.FC = () => {
       {filteredInitiatives.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredInitiatives.map((item) => {
-            const progress = Math.min((item.raised_amount / item.goal_amount) * 100, 100);
             const itemImages = parseImages(item.image_url);
             const mainImage = itemImages[0] || 'https://picsum.photos/seed/default-initiative/800/600';
             return (
@@ -331,7 +330,7 @@ export const InitiativesPage: React.FC = () => {
                       {item.type === 'item' ? 'Símbolo de Apoio' : 'Atividade Coletiva'}
                     </span>
                     <span className="bg-white/95 backdrop-blur-sm text-slate-700 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md border border-slate-100">
-                      🎯 Missão: {projects[item.project_id] || 'Geral'}
+                      🎯 Projeto: {projects[item.project_id] || 'Geral'}
                     </span>
                   </div>
                 </div>
@@ -343,32 +342,11 @@ export const InitiativesPage: React.FC = () => {
                     {item.description}
                   </p>
 
-                  {/* Impact Tag (Framing de valor) */}
-                  <div className="bg-accent/5 rounded-2xl p-4 border border-accent/15 mb-6 text-center shrink-0">
-                    <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Impacto Gerado no Campo</p>
-                    <p className="text-sm font-bold text-primary">{item.impact_description}</p>
-                  </div>
-
-                  {/* Progress & Value (Checkout & Crowdfunding) */}
+                  {/* Value (Checkout) */}
                   <div className="space-y-4 mt-auto">
-                    <div className="flex justify-between items-end shrink-0">
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Meta Coletiva</p>
-                        <p className="text-sm font-black text-primary">
-                          {formatAmount(item.raised_amount)} <span className="text-slate-400">/ {formatAmount(item.goal_amount)}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Contribuição Sugerida</p>
-                        <p className="text-xl font-black text-accent">{formatAmount(item.suggested_price)}</p>
-                      </div>
-                    </div>
-
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shrink-0">
-                      <div 
-                        style={{ width: `${progress}%` }} 
-                        className="h-full bg-accent rounded-full transition-all duration-1000"
-                      />
+                    <div className="shrink-0">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Contribuição Sugerida</p>
+                      <p className="text-xl font-black text-accent">{formatAmount(item.suggested_price)}</p>
                     </div>
 
                     <button 
@@ -464,12 +442,6 @@ export const InitiativesPage: React.FC = () => {
                             Apoiar com {selectedInitiative.type === 'item' ? 'Símbolo' : 'Atividade'}
                           </span>
                           <h3 className="text-2xl font-black text-primary leading-tight">{selectedInitiative.title}</h3>
-                        </div>
-
-                        {/* Impact Summary Frame */}
-                        <div className="bg-accent/5 border border-accent/15 rounded-2xl p-5 text-center">
-                          <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Seu Impacto Garantido com essa Escolha</p>
-                          <p className="text-sm font-bold text-primary">{selectedInitiative.impact_description}</p>
                         </div>
 
                         {/* Currency Selector Switch */}

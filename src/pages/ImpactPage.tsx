@@ -238,7 +238,6 @@ export const ImpactPage: React.FC = () => {
 
   const projectImages = parseImages(project.image_url);
   const mainImage = projectImages[0] || 'https://picsum.photos/seed/charity-hero/1200/800';
-  const progress = project.goal_amount ? Math.min((project.raised_amount / project.goal_amount) * 100, 100) : 0;
   const { t1, t2, t3 } = getContributionValues();
 
   return (
@@ -321,7 +320,7 @@ export const ImpactPage: React.FC = () => {
                   <div className="space-y-6 my-10 border-t border-slate-100 dark:border-slate-800 pt-8">
                     <h4 className="text-xl font-black text-primary dark:text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                       <span className="material-symbols-outlined text-accent">collections</span>
-                      Galeria de Fotos da Missão
+                      Galeria de Fotos do Projeto
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                       {projectImages.map((imgUrl, index) => (
@@ -405,22 +404,7 @@ export const ImpactPage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('missions.support')}</h3>
-                <p className="text-xs text-slate-500 font-bold">Ajude diretamente a financiar essa missão humanitária.</p>
-              </div>
-
-              {/* Progress visual */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progresso Coletivo</span>
-                  <span className="text-sm font-black text-success">{progress.toFixed(0)}%</span>
-                </div>
-                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div style={{ width: `${progress}%` }} className="h-full bg-success rounded-full transition-all duration-1000" />
-                </div>
-                <div className="flex justify-between text-xs font-bold pt-1">
-                  <span className="text-slate-800 dark:text-slate-200">{formatAmount(project.raised_amount)}</span>
-                  <span className="text-slate-400">Meta: {formatAmount(project.goal_amount)}</span>
-                </div>
+                <p className="text-xs text-slate-500 font-bold">Ajude diretamente a financiar esse projeto humanitário.</p>
               </div>
 
               {/* Tier options */}
@@ -459,7 +443,7 @@ export const ImpactPage: React.FC = () => {
                 className="w-full bg-primary hover:bg-primary/95 text-white py-4.5 rounded-xl font-black text-sm shadow-xl shadow-primary/10 transition-all flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">volunteer_activism</span>
-                Apoiar Missão Urgente
+                Apoiar Projeto Urgente
               </button>
             </div>
           </div>
@@ -563,7 +547,7 @@ export const ImpactPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Missão Apoiada</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Projeto Apoiado</p>
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300 line-clamp-1 max-w-[200px]">{verifiedInitiativeTitle}</p>
                     </div>
                     <div className="text-right">
@@ -617,7 +601,7 @@ export const ImpactPage: React.FC = () => {
 
                 <div className="bg-success/5 border border-success/15 rounded-2xl p-5 text-center">
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                    Este documento comprova o recebimento eletrônico de suporte financeiro voluntário integralmente destinado às ações de desenvolvimento e auxílio humanitário da ONG **Building Bridges** na missão supracitada.
+                    Este documento comprova o recebimento eletrônico de suporte financeiro voluntário integralmente destinado às ações de desenvolvimento e auxílio humanitário da ONG **Building Bridges** no projeto supracitado.
                   </p>
                 </div>
 
@@ -679,7 +663,7 @@ export const ImpactPage: React.FC = () => {
                       <div className="space-y-6">
                         <div>
                           <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
-                            Apoiar Missão Urgentemente
+                            Apoiar Projeto Urgentemente
                           </span>
                           <h3 className="text-2xl font-black text-primary leading-tight">{project.name}</h3>
                         </div>

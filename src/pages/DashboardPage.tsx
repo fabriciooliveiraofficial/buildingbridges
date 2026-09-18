@@ -23,7 +23,7 @@ export const DashboardPage: React.FC = () => {
         </div>
         <div className="bg-primary rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10">
-            <h4 className="font-bold text-lg mb-2">New Relief Mission</h4>
+            <h4 className="font-bold text-lg mb-2">New Relief Project</h4>
             <p className="text-sm text-slate-300 mb-4">Urgent support needed for flood victims in Porto Alegre.</p>
             <button className="w-full bg-white text-primary font-bold py-3 rounded hover:scale-105 transition-transform">
               Donate Now
@@ -61,7 +61,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-10">Mission Timeline</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-10">Project Timeline</h2>
           <div className="relative">
             <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100"></div>
             <div className="space-y-12">

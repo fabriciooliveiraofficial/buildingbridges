@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Layout } from './components/Layout';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -14,7 +14,6 @@ import { HomePage } from './pages/HomePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { TransparencyPage } from './pages/TransparencyPage';
 import { ImpactPage } from './pages/ImpactPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
@@ -40,9 +39,9 @@ export default function App() {
               <Route path="/action-hub" element={<InitiativesPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/transparency" element={<TransparencyPage />} />
+              <Route path="/transparency" element={<Navigate to="/" replace />} />
               <Route path="/impact/:id" element={<ImpactPage />} />
-              <Route path="/impact" element={<ImpactPage />} />
+              <Route path="/impact" element={<Navigate to="/projects" replace />} />
               <Route 
                 path="/admin" 
                 element={

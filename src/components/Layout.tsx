@@ -23,8 +23,6 @@ export const Header: React.FC = () => {
   const navLinks = [
     { to: '/projects', label: t('nav.missions') },
     { to: '/action-hub', label: t('nav.actionHub') || 'Hub de Ação' },
-    { to: '/impact', label: t('nav.impact') },
-    { to: '/transparency', label: t('nav.transparency') },
     { to: '/contact', label: t('footer.contact') },
   ];
 
@@ -186,18 +184,20 @@ export const Header: React.FC = () => {
 export const Footer: React.FC = () => {
   const { t } = useTranslation();
   return (
-    <footer className="bg-background-light py-12 border-t border-primary/5">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
-          <img src={logoUrl} alt="Building Bridges" className="h-12 w-12 sm:h-16 sm:w-16 object-contain grayscale" />
-        </div>
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-          <Link to="/privacy" className="text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase">{t('footer.privacy')}</Link>
-          <Link to="/transparency" className="text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase">{t('footer.reports')}</Link>
-          <Link to="/contact" className="text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase">{t('footer.contact')}</Link>
-        </div>
-        <div className="text-xs font-bold text-slate-400">
-          {t('footer.rights')}
+    <footer className="relative bg-background-light border-t border-primary/10">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden="true"></div>
+      <div className="max-w-7xl mx-auto px-6 py-12 lg:py-14 flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16">
+        <Link to="/" className="flex items-center gap-4 shrink-0 group" aria-label="Building Bridges">
+          <img src={logoUrl} alt="" className="h-16 w-16 lg:h-20 lg:w-20 object-contain transition-transform duration-300 group-hover:scale-105" />
+          <div>
+            <p className="font-heading font-black text-primary text-base lg:text-lg leading-tight">Building Bridges Foundation</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-accent">{t('hero.title')} {t('hero.subtitle')}</p>
+          </div>
+        </Link>
+        <div className="hidden md:block w-px self-stretch bg-primary/10" aria-hidden="true"></div>
+        <div className="max-w-2xl">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">{t('footer.legal')}</p>
+          <p className="text-[13px] leading-relaxed font-medium text-slate-500">{t('footer.rights')}</p>
         </div>
       </div>
     </footer>

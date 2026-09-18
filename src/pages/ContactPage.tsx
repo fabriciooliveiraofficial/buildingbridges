@@ -33,7 +33,7 @@ export const ContactPage: React.FC = () => {
       <SEO titleKey="contact" descriptionKey="contact" />
       <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-8">{t('footer.contact')}</h1>
       <p className="text-slate-600 dark:text-slate-400 text-lg mb-12">
-        Have questions about our missions or how you can help? We'd love to hear from you.
+        Have questions about our projects or how you can help? We'd love to hear from you.
       </p>
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

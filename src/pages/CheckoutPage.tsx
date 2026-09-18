@@ -220,7 +220,7 @@ export const CheckoutPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Select Project */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Humanitarian Mission</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Humanitarian Project</label>
                 {projectsLoading ? (
                   <div className="h-14 bg-slate-100 animate-pulse rounded-xl" />
                 ) : (
@@ -456,7 +456,7 @@ export const CheckoutPage: React.FC = () => {
             
             <div className="border-t border-b border-slate-100 py-4 space-y-3">
               <div className="flex justify-between text-xs font-bold text-slate-500">
-                <span>Missão Apoiada</span>
+                <span>Projeto Apoiado</span>
                 <span className="text-slate-800 font-extrabold max-w-[150px] truncate">
                   {selectedProjDetails ? selectedProjDetails.name : 'Outras Ações'}
                 </span>
@@ -585,7 +585,7 @@ export const CheckoutPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Missão Apoiada</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Projeto Apoiado</p>
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300 line-clamp-1 max-w-[200px]">{verifiedInitiativeTitle}</p>
                     </div>
                     <div className="text-right">
@@ -639,7 +639,7 @@ export const CheckoutPage: React.FC = () => {
 
                 <div className="bg-success/5 border border-success/15 rounded-2xl p-5 text-center">
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                    Este documento comprova o recebimento eletrônico de suporte financeiro voluntário integralmente destinado às ações de desenvolvimento e auxílio humanitário da ONG **Building Bridges** na missão supracitada.
+                    Este documento comprova o recebimento eletrônico de suporte financeiro voluntário integralmente destinado às ações de desenvolvimento e auxílio humanitário da ONG **Building Bridges** no projeto supracitado.
                   </p>
                 </div>
 
