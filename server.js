@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import Stripe from 'stripe';
+import nodemailer from 'nodemailer';
+import { PUBLIC_PAGES, PRIVATE_PAGES, LEGACY_REDIRECTS, matchProjectPath, buildSeoBlock, injectSeoBlock, buildSitemapXml, truncate, absoluteImageUrl } from './seo-meta.js';
 
 // Load environment variables immediately
 dotenv.config();
@@ -33,8 +35,9 @@ function hashPassword(password) {
 
 // Verify password
 function verifyPassword(password, hash, salt) {
-  const derivedKey = crypto.scryptSync(password, salt, 64);
-  return derivedKey.toString('hex') === hash;
+  const derivedKey = crypto.scryptSync(String(password), salt, 64);
+  const expected = Buffer.from(hash, 'hex');
+  return expected.length === derivedKey.length && crypto.timingSafeEqual(derivedKey, expected);
 }
 
 // Token signing key
@@ -77,6 +80,114 @@ function verifyToken(token) {
   } catch (err) {
     return null;
   }
+}
+
+// --- ACCOUNT SECURITY HELPERS (password policy, rate limiting, transactional email) ---
+
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128; // bounds the cost of scrypt on hostile input
+const RESET_LINK_TTL_MINUTES = 60;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function validateNewPassword(password) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must have at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return `Password must have at most ${MAX_PASSWORD_LENGTH} characters.`;
+  }
+  return null;
+}
+
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+
+// Minimal in-memory rate limiter (per process). Good enough to blunt brute force on the
+// account endpoints; resets on restart.
+const rateBuckets = new Map();
+function rateLimited(key, max, windowMs) {
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now > bucket.reset) {
+    rateBuckets.set(key, { count: 1, reset: now + windowMs });
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > max;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) if (now > bucket.reset) rateBuckets.delete(key);
+}, 10 * 60 * 1000).unref();
+
+function clientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+}
+
+// Password-reset links must ONLY be built from the configured APP_URL. Deriving the host from the
+// request (Origin / Host headers) would let an attacker make the victim receive a reset link that
+// points at a domain the attacker controls.
+function getAppUrl() {
+  return (process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+}
+
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let mailTransport = null;
+function getMailTransport() {
+  if (mailTransport) return mailTransport;
+  const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_HOST) return null;
+  const port = Number(SMTP_PORT) || 587;
+  mailTransport = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port,
+    secure: SMTP_SECURE ? SMTP_SECURE === 'true' : port === 465,
+    auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
+  });
+  return mailTransport;
+}
+
+// Returns true when the message was handed to the SMTP server. Never throws.
+async function sendMail({ to, subject, text, html }) {
+  const transport = getMailTransport();
+  if (!transport) {
+    console.warn('[MAIL] SMTP is not configured (SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / MAIL_FROM). Email NOT sent.');
+    console.warn(`[MAIL] To: ${to} | Subject: ${subject}\n${text}`);
+    return false;
+  }
+  try {
+    await transport.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to, subject, text, html });
+    return true;
+  } catch (err) {
+    console.error(`[MAIL] Failed to send "${subject}" to ${to}:`, err.message);
+    return false;
+  }
+}
+
+function mailLayout(heading, bodyHtml) {
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
+    <h2 style="color:#0a3161;margin:0 0 16px">${escapeHtml(heading)}</h2>
+    ${bodyHtml}
+    <p style="color:#94a3b8;font-size:12px;margin-top:32px">Building Bridges Foundation BR-USA</p>
+  </div>`;
+}
+
+// Tells the account owner (primary + recovery address) that something changed in their security settings.
+function notifyAccountChange(user, subject, message, extraRecipients = []) {
+  const recipients = [...new Set([user.email, user.recovery_email, ...extraRecipients].filter(Boolean))];
+  const text = `${message}\n\nSe não foi você, redefina sua senha imediatamente em ${getAppUrl()}/forgot-password e avise a administração.`;
+  const html = mailLayout(subject, `<p>${escapeHtml(message)}</p><p>Se não foi você, <a href="${getAppUrl()}/forgot-password">redefina sua senha imediatamente</a> e avise a administração.</p>`);
+  recipients.forEach((to) => { void sendMail({ to, subject, text, html }); });
+}
+
+async function getAuthUser(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const payload = verifyToken(authHeader.split(' ')[1]);
+  if (!payload) return null;
+  const [rows] = await pool.query('SELECT * FROM `users` WHERE `id` = ?', [payload.id]);
+  return rows[0] || null;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -208,6 +319,7 @@ const upload = multer({
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
+  port: Number(process.env.DB_PORT) || 3306,
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'building_bridges',
   waitForConnections: true,
@@ -309,6 +421,32 @@ async function initializeDatabase() {
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         INDEX idx_email (\`email\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Recovery e-mail column (added after the first release, so migrate existing databases)
+    try {
+      const [recoveryCols] = await pool.query('SHOW COLUMNS FROM `users` LIKE "recovery_email"');
+      if (recoveryCols.length === 0) {
+        await pool.query('ALTER TABLE `users` ADD COLUMN `recovery_email` VARCHAR(255) NULL AFTER `email`');
+        console.log('users table altered: recovery_email column added.');
+      }
+    } catch (err) {
+      console.error('Failed to add users.recovery_email column:', err.message);
+    }
+
+    // One-time password reset links (only the SHA-256 of the token is stored)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`password_resets\` (
+        \`id\` VARCHAR(64) NOT NULL,
+        \`user_id\` VARCHAR(255) NOT NULL,
+        \`token_hash\` CHAR(64) NOT NULL,
+        \`expires_at\` DATETIME NOT NULL,
+        \`used_at\` DATETIME NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        INDEX idx_token_hash (\`token_hash\`),
+        FOREIGN KEY (\`user_id\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
@@ -1051,36 +1189,172 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/forgot-password - Password recovery request
+// POST /api/auth/forgot-password - Email a one-time reset link to the account's e-mail and recovery e-mail
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required.' });
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required.', code: 'MISSING_FIELDS' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-
-    // Check if the user exists in MySQL
-    const [rows] = await pool.query('SELECT id, display_name FROM `users` WHERE `email` = ?', [normalizedEmail]);
-    
-    // Log the request to server console for admin/developer convenience
-    console.log(`[PASSWORD RESET] Request received for: ${normalizedEmail}`);
-    if (rows.length === 0) {
-      console.log(`[PASSWORD RESET] User with email ${normalizedEmail} does not exist in MySQL.`);
-    } else {
-      console.log(`[PASSWORD RESET] User found: ${rows[0].display_name} (ID: ${rows[0].id}).`);
-      console.log(`[PASSWORD RESET] TIP: To reset manually, run: UPDATE users SET password_hash = 'NEW_HASH', password_salt = 'NEW_SALT' WHERE email = '${normalizedEmail}';`);
+    if (rateLimited(`forgot-ip:${clientIp(req)}`, 10, 60 * 60 * 1000) || rateLimited(`forgot:${normalizedEmail}`, 3, 60 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Too many requests. Try again later.', code: 'RATE_LIMITED' });
     }
 
-    // Always return success to prevent user enumeration attacks and matches Firebase behavior
-    res.json({
-      success: true,
-      message: 'Reset instructions have been processed.'
-    });
+    // The address may be the account e-mail or the registered recovery e-mail.
+    let [users] = await pool.query('SELECT id, display_name, email, recovery_email FROM `users` WHERE `email` = ?', [normalizedEmail]);
+    if (users.length === 0) {
+      [users] = await pool.query('SELECT id, display_name, email, recovery_email FROM `users` WHERE `recovery_email` = ? LIMIT 5', [normalizedEmail]);
+    }
+
+    for (const user of users) {
+      const token = crypto.randomBytes(32).toString('base64url');
+      await pool.query('UPDATE `password_resets` SET `used_at` = NOW() WHERE `user_id` = ? AND `used_at` IS NULL', [user.id]);
+      await pool.query(
+        'INSERT INTO `password_resets` (`id`, `user_id`, `token_hash`, `expires_at`) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))',
+        [crypto.randomUUID(), user.id, sha256(token), RESET_LINK_TTL_MINUTES]
+      );
+
+      const link = `${getAppUrl()}/reset-password?token=${token}`;
+      const subject = 'Redefinição de senha - Building Bridges';
+      const text = `Olá, ${user.display_name}.\n\nRecebemos um pedido para redefinir a senha da sua conta. Use o link abaixo (válido por ${RESET_LINK_TTL_MINUTES} minutos, uso único):\n\n${link}\n\nSe você não fez esse pedido, ignore este e-mail: sua senha continua a mesma.`;
+      const html = mailLayout('Redefinição de senha', `
+        <p>Olá, ${escapeHtml(user.display_name)}.</p>
+        <p>Recebemos um pedido para redefinir a senha da sua conta. O link abaixo vale por ${RESET_LINK_TTL_MINUTES} minutos e só pode ser usado uma vez.</p>
+        <p style="margin:24px 0"><a href="${link}" style="background:#FF8C00;color:#fff;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:bold">Criar nova senha</a></p>
+        <p style="color:#64748b;font-size:13px">Se o botão não funcionar, copie este endereço: ${link}</p>
+        <p style="color:#64748b;font-size:13px">Se você não fez esse pedido, ignore este e-mail: sua senha continua a mesma.</p>`);
+
+      // Sent in the background so the response time does not reveal whether the account exists.
+      [...new Set([user.email, user.recovery_email].filter(Boolean))].forEach((to) => { void sendMail({ to, subject, text, html }); });
+      console.log(`[PASSWORD RESET] Reset link issued for user ${user.id}.`);
+    }
+
+    // Always the same answer so this endpoint cannot be used to discover which e-mails are registered.
+    res.json({ success: true, message: 'If the address is registered, reset instructions have been sent.' });
   } catch (err) {
     console.error('API Error /api/auth/forgot-password:', err);
     res.status(500).json({ error: 'Database error processing password recovery.' });
+  }
+});
+
+// POST /api/auth/reset-password - Set a new password using the one-time link received by e-mail
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+    if (!token || typeof token !== 'string' || !new_password) {
+      return res.status(400).json({ error: 'Token and new password are required.', code: 'MISSING_FIELDS' });
+    }
+    if (rateLimited(`reset-ip:${clientIp(req)}`, 20, 60 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' });
+    }
+    const weak = validateNewPassword(new_password);
+    if (weak) return res.status(400).json({ error: weak, code: 'WEAK_PASSWORD' });
+
+    const [rows] = await pool.query(
+      'SELECT `id`, `user_id` FROM `password_resets` WHERE `token_hash` = ? AND `used_at` IS NULL AND `expires_at` > NOW() LIMIT 1',
+      [sha256(token)]
+    );
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'This link is invalid or has expired.', code: 'INVALID_TOKEN' });
+    }
+
+    // Consume the link first; the affected-rows check makes it strictly single use even under races.
+    const [consumed] = await pool.query('UPDATE `password_resets` SET `used_at` = NOW() WHERE `id` = ? AND `used_at` IS NULL', [rows[0].id]);
+    if (consumed.affectedRows !== 1) {
+      return res.status(400).json({ error: 'This link is invalid or has expired.', code: 'INVALID_TOKEN' });
+    }
+
+    const { hash, salt } = hashPassword(new_password);
+    await pool.query('UPDATE `users` SET `password_hash` = ?, `password_salt` = ? WHERE `id` = ?', [hash, salt, rows[0].user_id]);
+    await pool.query('UPDATE `password_resets` SET `used_at` = NOW() WHERE `user_id` = ? AND `used_at` IS NULL', [rows[0].user_id]);
+
+    const [users] = await pool.query('SELECT `email`, `recovery_email` FROM `users` WHERE `id` = ?', [rows[0].user_id]);
+    if (users[0]) notifyAccountChange(users[0], 'Sua senha foi redefinida', 'A senha da sua conta Building Bridges acabou de ser redefinida por meio de um link de recuperação.');
+
+    console.log(`[PASSWORD RESET] Password reset completed for user ${rows[0].user_id}.`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('API Error /api/auth/reset-password:', err);
+    res.status(500).json({ error: 'Database error resetting password.' });
+  }
+});
+
+// POST /api/auth/change-password - Logged-in user changes their own password
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) return res.status(401).json({ error: 'Authorization token required.', code: 'UNAUTHORIZED' });
+
+    if (rateLimited(`chpw:${user.id}`, 8, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' });
+    }
+
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: 'Current and new password are required.', code: 'MISSING_FIELDS' });
+    }
+    if (!verifyPassword(current_password, user.password_hash, user.password_salt)) {
+      return res.status(403).json({ error: 'Current password is incorrect.', code: 'WRONG_PASSWORD' });
+    }
+    const weak = validateNewPassword(new_password);
+    if (weak) return res.status(400).json({ error: weak, code: 'WEAK_PASSWORD' });
+    if (new_password === current_password) {
+      return res.status(400).json({ error: 'The new password must be different from the current one.', code: 'SAME_PASSWORD' });
+    }
+
+    const { hash, salt } = hashPassword(new_password);
+    await pool.query('UPDATE `users` SET `password_hash` = ?, `password_salt` = ? WHERE `id` = ?', [hash, salt, user.id]);
+    // Any reset link requested before this change is no longer valid.
+    await pool.query('UPDATE `password_resets` SET `used_at` = NOW() WHERE `user_id` = ? AND `used_at` IS NULL', [user.id]);
+
+    notifyAccountChange(user, 'Sua senha foi alterada', 'A senha da sua conta Building Bridges acabou de ser alterada.');
+    console.log(`[ACCOUNT] Password changed for user ${user.id}.`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('API Error /api/auth/change-password:', err);
+    res.status(500).json({ error: 'Database error changing password.' });
+  }
+});
+
+// PUT /api/auth/recovery-email - Set, change or remove the recovery e-mail (needs the current password)
+app.put('/api/auth/recovery-email', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) return res.status(401).json({ error: 'Authorization token required.', code: 'UNAUTHORIZED' });
+
+    if (rateLimited(`recovery:${user.id}`, 8, 15 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Too many attempts. Try again later.', code: 'RATE_LIMITED' });
+    }
+
+    const { recovery_email, current_password } = req.body;
+    if (!current_password || !verifyPassword(current_password, user.password_hash, user.password_salt)) {
+      return res.status(403).json({ error: 'Current password is incorrect.', code: 'WRONG_PASSWORD' });
+    }
+
+    const value = typeof recovery_email === 'string' ? recovery_email.toLowerCase().trim() : '';
+    if (value) {
+      if (value.length > 255 || !EMAIL_PATTERN.test(value)) {
+        return res.status(400).json({ error: 'Invalid e-mail address.', code: 'INVALID_EMAIL' });
+      }
+      if (value === user.email) {
+        return res.status(400).json({ error: 'The recovery e-mail must be different from the account e-mail.', code: 'SAME_AS_PRIMARY' });
+      }
+    }
+
+    await pool.query('UPDATE `users` SET `recovery_email` = ? WHERE `id` = ?', [value || null, user.id]);
+
+    // The previous recovery address is told too, so a silent swap by someone else would be noticed.
+    const message = value
+      ? `O e-mail de recuperação da sua conta Building Bridges foi definido como ${value}.`
+      : 'O e-mail de recuperação da sua conta Building Bridges foi removido.';
+    notifyAccountChange({ email: user.email, recovery_email: value || null }, 'E-mail de recuperação atualizado', message, [user.recovery_email]);
+    console.log(`[ACCOUNT] Recovery e-mail updated for user ${user.id}.`);
+    res.json({ success: true, recovery_email: value || null });
+  } catch (err) {
+    console.error('API Error /api/auth/recovery-email:', err);
+    res.status(500).json({ error: 'Database error updating recovery e-mail.' });
   }
 });
 
@@ -1099,7 +1373,7 @@ app.get('/api/auth/me', async (req, res) => {
     }
 
     // Fetch up-to-date user details from MySQL
-    const [rows] = await pool.query('SELECT id, display_name, email, role, created_at FROM `users` WHERE `id` = ?', [payload.id]);
+    const [rows] = await pool.query('SELECT id, display_name, email, recovery_email, role, created_at FROM `users` WHERE `id` = ?', [payload.id]);
     if (rows.length === 0) {
       return res.status(401).json({ error: 'User account no longer exists.' });
     }
@@ -1447,13 +1721,126 @@ app.post('/api/contributions/:id/status', async (req, res) => {
 });
 
 // Handle Serve Client SPA Frontend in Production
+// --- SEO: canonical host, legacy redirects, dynamic sitemap and per-route <head> (see seo-meta.js) ---
+
+// Canonical address of the site (used for canonical links, og:url, og:image and the sitemap).
+const SITE_URL = (process.env.SITE_URL || 'https://buildingbridgesbrusa.org').replace(/\/+$/, '');
+const SITE_HOST = new URL(SITE_URL).host;
+const INDEXABLE_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+const PRIVATE_DESCRIPTION = 'Building Bridges Foundation — humanitarian disaster relief in Brazil and the USA.';
+
+// www.<domain> -> <domain> (one canonical host, otherwise every page exists twice for search engines)
+app.use((req, res, next) => {
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
+  if (host === `www.${SITE_HOST}`) {
+    return res.redirect(301, `${SITE_URL}${req.originalUrl}`);
+  }
+  next();
+});
+
+// Removed pages and trailing slashes: permanent redirects instead of duplicates / soft 404s.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.startsWith('/assets/')) return next();
+  const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  const cleanPath = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
+  const target = LEGACY_REDIRECTS[cleanPath];
+  if (target) return res.redirect(301, target);
+  if (cleanPath !== req.path && !/\.[a-z0-9]{2,5}$/i.test(cleanPath)) return res.redirect(301, cleanPath + query);
+  next();
+});
+
+// Sitemap generated from the database, so every published project is listed.
+app.get('/sitemap.xml', async (req, res) => {
+  let projects = [];
+  try {
+    if (pool) {
+      const [rows] = await pool.query("SELECT `id`, `created_at` FROM `projects` WHERE `status` <> 'archive' ORDER BY `created_at` DESC");
+      projects = rows.map((r) => ({ id: r.id, lastmod: r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : undefined }));
+    }
+  } catch (err) {
+    console.error('Sitemap: could not read projects, listing static pages only:', err.message);
+  }
+  res.set('Cache-Control', 'public, max-age=3600').type('application/xml').send(buildSitemapXml(SITE_URL, projects));
+});
+
 const clientBuildDir = path.join(__dirname, 'dist');
 if (fs.existsSync(clientBuildDir)) {
-  app.use(express.static(clientBuildDir));
-  
-  // Serve react router index.html for any unknown route (SPA client-side routing fallback)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientBuildDir, 'index.html'));
+  // index: false -> "/" also goes through the SEO handler below instead of the raw index.html
+  app.use(express.static(clientBuildDir, {
+    index: false,
+    setHeaders(res, filePath) {
+      const normalized = filePath.split(path.sep).join('/');
+      if (normalized.includes('/assets/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // hashed file names
+      } else if (/\/(sw\.js|registerSW\.js|manifest\.json|workbox-[^/]+\.js)$/.test(normalized)) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
+
+  let indexCache = { mtime: 0, html: '' };
+  const readIndexHtml = () => {
+    const file = path.join(clientBuildDir, 'index.html');
+    const { mtimeMs } = fs.statSync(file);
+    if (mtimeMs !== indexCache.mtime) indexCache = { mtime: mtimeMs, html: fs.readFileSync(file, 'utf8') };
+    return indexCache.html;
+  };
+
+  // App shell for every real route, with the <head> rewritten for that route.
+  app.get('*', async (req, res) => {
+    const p = req.path;
+
+    // Missing API endpoints / files must be real 404s, not the HTML shell.
+    if (p.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+    if (p.startsWith('/uploads/') || p.startsWith('/assets/') || /\.[a-z0-9]{2,5}$/i.test(p)) {
+      return res.status(404).type('text/plain').send('Not found');
+    }
+
+    let status = 200;
+    let seo;
+    const projectId = matchProjectPath(p);
+
+    if (PUBLIC_PAGES[p]) {
+      seo = { path: p, title: PUBLIC_PAGES[p].title, description: PUBLIC_PAGES[p].description, robots: INDEXABLE_ROBOTS };
+    } else if (PRIVATE_PAGES[p]) {
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      if (p === '/reset-password') res.set('Referrer-Policy', 'no-referrer'); // the URL carries the one-time token
+      seo = { path: p, title: PRIVATE_PAGES[p], description: PRIVATE_DESCRIPTION, robots: 'noindex, nofollow' };
+    } else if (projectId) {
+      seo = { path: p, title: 'Humanitarian Project | Building Bridges', description: PUBLIC_PAGES['/projects'].description, robots: INDEXABLE_ROBOTS };
+      try {
+        if (pool) {
+          const [rows] = await pool.query('SELECT `name`, `description`, `long_description`, `image_url` FROM `projects` WHERE `id` = ? LIMIT 1', [projectId]);
+          if (rows.length === 0) {
+            status = 404;
+            res.set('X-Robots-Tag', 'noindex, nofollow');
+            seo = { path: p, title: 'Project not found | Building Bridges', description: PRIVATE_DESCRIPTION, robots: 'noindex, nofollow' };
+          } else {
+            const project = rows[0];
+            seo.title = `${project.name} | Building Bridges`;
+            seo.description = truncate(project.description || project.long_description, 200) || seo.description;
+            seo.image = absoluteImageUrl(project.image_url, SITE_URL);
+            seo.imageAlt = project.name;
+          }
+        }
+      } catch (err) {
+        // Database hiccup: keep the generic (indexable) tags rather than deindexing a valid page.
+        console.error('SEO: could not load project for', p, err.message);
+      }
+    } else {
+      status = 404;
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      seo = { path: p, title: 'Page not found | Building Bridges', description: PRIVATE_DESCRIPTION, robots: 'noindex, nofollow' };
+    }
+
+    try {
+      const html = injectSeoBlock(readIndexHtml(), buildSeoBlock({ siteUrl: SITE_URL, ...seo }));
+      res.status(status).set('Cache-Control', 'no-cache').type('html').send(html);
+    } catch (err) {
+      console.error('SEO: falling back to the plain index.html:', err.message);
+      res.sendFile(path.join(clientBuildDir, 'index.html'));
+    }
   });
 }
 

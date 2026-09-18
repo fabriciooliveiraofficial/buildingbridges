@@ -10,7 +10,11 @@ const resources = {
         "missions": "Urgent Projects",
         "actionHub": "Action Hub",
         "donate": "DONATE NOW",
-        "admin": "Admin Panel"
+        "admin": "Admin Panel",
+        "menu": "Menu",
+        "close": "Close",
+        "currency": "Currency",
+        "signOut": "Sign Out"
       },
       "hero": {
         "live": "Live Relief Active",
@@ -140,12 +144,28 @@ const resources = {
         "sendReset": "Send Reset Link",
         "sendingRequest": "Sending Request...",
         "backToLogin": "Back to Login",
-        "resetSuccess": "Password reset email sent! Check your inbox."
+        "resetSuccess": "Password reset email sent! Check your inbox.",
+        "recoveryHint": "Use your account e-mail or your recovery e-mail.",
+        "resetTitle": "New password",
+        "resetSubtitle": "Choose a new password for your account",
+        "resetNewPassword": "New password",
+        "resetConfirmPassword": "Confirm new password",
+        "minChars8": "At least 8 characters",
+        "resetSubmit": "Save new password",
+        "resetSaving": "Saving...",
+        "resetDoneTitle": "Password updated",
+        "resetDone": "Your password was changed. You can sign in now.",
+        "resetInvalidLink": "This link is invalid or has expired.",
+        "resetRequestNew": "Request a new link",
+        "resetWeakPassword": "The password must have between 8 and 128 characters.",
+        "resetMismatch": "The confirmation does not match the new password.",
+        "resetRateLimited": "Too many attempts. Please wait a few minutes and try again.",
+        "resetFailed": "Could not update the password. Please try again."
       },
       "seo": {
         "home": {
           "title": "Building Bridges | Touching Nations, Changing Lives",
-          "description": "Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals. Rebuilding cities, bridging nations."
+          "description": "Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA."
         },
         "projects": {
           "title": "Humanitarian Projects | Building Bridges",
@@ -155,9 +175,13 @@ const resources = {
           "title": "Action Hub & Urgent Projects | Building Bridges",
           "description": "Find out where we are acting right now. Urgent humanitarian response campaigns in Brazil and the United States."
         },
-        "impact": {
-          "title": "Our Social Impact | Building Bridges",
-          "description": "See the direct, verified results of our disaster relief campaigns. Real-time updates, metrics, and case studies of lives changed."
+        "privacy": {
+          "title": "Privacy Policy | Building Bridges",
+          "description": "How Building Bridges collects, uses and protects your personal information when you donate or use our website."
+        },
+        "terms": {
+          "title": "Terms of Service | Building Bridges",
+          "description": "The terms and conditions that apply to the use of the Building Bridges website and donation services."
         },
         "contact": {
           "title": "Contact Us | Building Bridges",
@@ -173,7 +197,11 @@ const resources = {
         "missions": "Projetos Urgentes",
         "actionHub": "Hub de Ação",
         "donate": "DOE AGORA",
-        "admin": "Painel Admin"
+        "admin": "Painel Admin",
+        "menu": "Menu",
+        "close": "Fechar",
+        "currency": "Moeda",
+        "signOut": "Sair"
       },
       "hero": {
         "live": "Ajuda ao Vivo Ativa",
@@ -303,12 +331,28 @@ const resources = {
         "sendReset": "Enviar Link de Redefinição",
         "sendingRequest": "Enviando Solicitação...",
         "backToLogin": "Voltar para o Login",
-        "resetSuccess": "E-mail de redefinição de senha enviado! Verifique sua caixa de entrada."
+        "resetSuccess": "E-mail de redefinição de senha enviado! Verifique sua caixa de entrada.",
+        "recoveryHint": "Use o e-mail da sua conta ou o seu e-mail de recuperação.",
+        "resetTitle": "Nova senha",
+        "resetSubtitle": "Escolha uma nova senha para a sua conta",
+        "resetNewPassword": "Nova senha",
+        "resetConfirmPassword": "Confirmar nova senha",
+        "minChars8": "Mínimo de 8 caracteres",
+        "resetSubmit": "Salvar nova senha",
+        "resetSaving": "Salvando...",
+        "resetDoneTitle": "Senha atualizada",
+        "resetDone": "Sua senha foi alterada. Você já pode entrar.",
+        "resetInvalidLink": "Este link é inválido ou expirou.",
+        "resetRequestNew": "Solicitar um novo link",
+        "resetWeakPassword": "A senha deve ter entre 8 e 128 caracteres.",
+        "resetMismatch": "A confirmação não é igual à nova senha.",
+        "resetRateLimited": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+        "resetFailed": "Não foi possível atualizar a senha. Tente novamente."
       },
       "seo": {
         "home": {
           "title": "Building Bridges | Alcançando Nações, Tocando Vidas",
-          "description": "Ajuda humanitária para catástrofes e suporte a famílias em necessidade, cidades atingidas e indivíduos vulneráveis. Reconstruindo cidades, unindo nações."
+          "description": "Ajuda humanitária em desastres e apoio a famílias em necessidade, cidades atingidas e pessoas vulneráveis no Brasil e nos EUA."
         },
         "projects": {
           "title": "Projetos Humanitários | Building Bridges",
@@ -318,9 +362,13 @@ const resources = {
           "title": "Hub de Ação e Projetos Urgentes | Building Bridges",
           "description": "Descubra nossas respostas ativas a crises humanitárias e desastres naturais no Brasil e nos Estados Unidos. Faça a diferença."
         },
-        "impact": {
-          "title": "Nosso Impacto Social | Building Bridges",
-          "description": "Veja os resultados reais e verificados das nossas ações. Histórias reais, dados de conversão e vidas impactadas pela sua ajuda."
+        "privacy": {
+          "title": "Política de Privacidade | Building Bridges",
+          "description": "Como a Building Bridges coleta, usa e protege suas informações pessoais quando você doa ou usa nosso site."
+        },
+        "terms": {
+          "title": "Termos de Serviço | Building Bridges",
+          "description": "Os termos e condições que se aplicam ao uso do site e dos serviços de doação da Building Bridges."
         },
         "contact": {
           "title": "Fale Conosco | Building Bridges",
@@ -336,7 +384,11 @@ const resources = {
         "missions": "Proyectos Urgentes",
         "actionHub": "Hub de Acción",
         "donate": "DONA AHORA",
-        "admin": "Panel Admin"
+        "admin": "Panel Admin",
+        "menu": "Menú",
+        "close": "Cerrar",
+        "currency": "Moneda",
+        "signOut": "Cerrar sesión"
       },
       "hero": {
         "live": "Ayuda en Vivo Activa",
@@ -466,12 +518,28 @@ const resources = {
         "sendReset": "Enviar Enlace de Redefiniamiento",
         "sendingRequest": "Enviando Solicitud...",
         "backToLogin": "Voltar al Inicio de Sesión",
-        "resetSuccess": "¡Correo electrónico de reestablecimiento enviado! Revise su bandeja de entrada."
+        "resetSuccess": "¡Correo electrónico de reestablecimiento enviado! Revise su bandeja de entrada.",
+        "recoveryHint": "Use el correo de su cuenta o su correo de recuperación.",
+        "resetTitle": "Nueva contraseña",
+        "resetSubtitle": "Elija una nueva contraseña para su cuenta",
+        "resetNewPassword": "Nueva contraseña",
+        "resetConfirmPassword": "Confirmar nueva contraseña",
+        "minChars8": "Mínimo 8 caracteres",
+        "resetSubmit": "Guardar nueva contraseña",
+        "resetSaving": "Guardando...",
+        "resetDoneTitle": "Contraseña actualizada",
+        "resetDone": "Su contraseña fue cambiada. Ya puede iniciar sesión.",
+        "resetInvalidLink": "Este enlace no es válido o ya expiró.",
+        "resetRequestNew": "Solicitar un nuevo enlace",
+        "resetWeakPassword": "La contraseña debe tener entre 8 y 128 caracteres.",
+        "resetMismatch": "La confirmación no coincide con la nueva contraseña.",
+        "resetRateLimited": "Demasiados intentos. Espere unos minutos e inténtelo de nuevo.",
+        "resetFailed": "No se pudo actualizar la contraseña. Inténtelo de nuevo."
       },
       "seo": {
         "home": {
           "title": "Building Bridges | Alcanzando Naciones, Tocando Vidas",
-          "description": "Ayuda humanitaria para desastres y apoyo a familias necesitadas, ciudades afectadas e individuos vulnerables. Reconstruyendo ciudades, uniendo naciones."
+          "description": "Ayuda humanitaria en desastres y apoyo a familias necesitadas, ciudades afectadas y personas vulnerables en Brasil y EE. UU."
         },
         "projects": {
           "title": "Proyectos Humanitarios | Building Bridges",
@@ -481,9 +549,13 @@ const resources = {
           "title": "Hub de Acción y Proyectos Urgentes | Building Bridges",
           "description": "Descubra nuestras respuestas activas a crisis humanitarias y desastres naturales en Brasil y Estados Unidos. Marque la diferencia hoy."
         },
-        "impact": {
-          "title": "Nuestro Impacto Social | Building Bridges",
-          "description": "Vea los resultados reales y verificados de nuestras acciones. Historias reales, datos de conversión y vidas impactadas por su ayuda."
+        "privacy": {
+          "title": "Política de Privacidad | Building Bridges",
+          "description": "Cómo Building Bridges recopila, usa y protege su información personal cuando dona o usa nuestro sitio web."
+        },
+        "terms": {
+          "title": "Términos de Servicio | Building Bridges",
+          "description": "Los términos y condiciones que se aplican al uso del sitio web y de los servicios de donación de Building Bridges."
         },
         "contact": {
           "title": "Contáctenos | Building Bridges",

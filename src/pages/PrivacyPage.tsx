@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SEO } from '../components/SEO';
 
 export const PrivacyPage: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="max-w-4xl mx-auto px-6 py-20">
+      <SEO titleKey="privacy" descriptionKey="privacy" />
       <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-8">{t('footer.privacy')}</h1>
       <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 space-y-6">
         <p>Your privacy is important to us. This Privacy Policy explains how Building Bridges collects, uses, and protects your personal information when you use our website and services.</p>

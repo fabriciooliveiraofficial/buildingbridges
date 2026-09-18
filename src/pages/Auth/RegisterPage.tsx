@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { SEO } from '../../components/SEO';
 
 export const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +51,7 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-6 py-12 bg-background-light dark:bg-background-dark">
+      <SEO fallbackTitle="Staff Registration | Building Bridges" noindex />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

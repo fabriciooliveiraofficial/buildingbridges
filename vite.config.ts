@@ -13,11 +13,13 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         manifestFilename: 'manifest.json',
-        includeAssets: ['logo_building_bridges.png', 'robots.txt', 'sitemap.xml'],
+        includeAssets: ['logo_building_bridges.png', 'favicon.ico', 'apple-touch-icon.png', 'og-image.png', 'robots.txt'],
         manifest: {
           name: 'Building Bridges Foundation',
           short_name: 'Building Bridges',
-          description: 'Humanitarian disaster relief providing transparent, real-time aid for families in need.',
+          description: 'Humanitarian disaster relief providing transparent, real-time aid for families in need in Brazil and the USA.',
+          lang: 'en',
+          id: '/',
           theme_color: '#FF6B00',
           background_color: '#FFFFFF',
           display: 'standalone',
@@ -26,27 +28,23 @@ export default defineConfig(({mode}) => {
           orientation: 'portrait',
           icons: [
             {
-              src: '/logo_building_bridges.png',
+              src: '/icon-192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/logo_building_bridges.png',
+              src: '/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
-            },
-            {
-              src: '/logo_building_bridges.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
             }
           ]
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,png,svg,woff2}']
+          globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+          // These must always reach the server (API, uploads, sitemap/robots): never answer them with the cached app shell
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/sitemap\.xml$/, /^\/robots\.txt$/]
         }
       })
     ],

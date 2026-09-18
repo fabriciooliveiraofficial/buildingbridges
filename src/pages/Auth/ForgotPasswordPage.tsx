@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
+import { SEO } from '../../components/SEO';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -25,6 +26,9 @@ export const ForgotPasswordPage: React.FC = () => {
 
       const data = await response.json();
 
+      if (response.status === 429) {
+        throw new Error(t('auth.resetRateLimited'));
+      }
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send reset request');
       }
@@ -40,6 +44,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-6 py-12 bg-background-light dark:bg-background-dark">
+      <SEO fallbackTitle="Password Recovery | Building Bridges" noindex />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -78,6 +83,7 @@ export const ForgotPasswordPage: React.FC = () => {
                 placeholder="staff@buildingbridges.org"
               />
             </div>
+            <p className="text-[11px] font-bold text-slate-400 ml-1">{t('auth.recoveryHint')}</p>
           </div>
 
           <button 

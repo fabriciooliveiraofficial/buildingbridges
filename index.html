@@ -3,32 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Building Bridges | Touching Nations, Changing Lives</title>
-    <meta name="description" content="Humanitarian disaster relief providing transparent, real-time aid for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA." />
-    
-    <!-- Fallback Open Graph / Social Previews -->
-    <meta property="og:title" content="Building Bridges | Touching Nations, Changing Lives" />
-    <meta property="og:description" content="Humanitarian disaster relief providing transparent, real-time aid for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA." />
-    <meta property="og:image" content="/assets/logo_building_bridges-D5SxI4m5.png" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://buildingbridgesbrusa.org" />
-    
+
+    <!--
+      SEO block: in production server.js replaces everything between the seo:start / seo:end markers with the
+      title, description, canonical, robots and Open Graph tags of the requested URL (see seo-meta.js).
+      The values below are the home page defaults (used by the Vite dev server and as a last-resort fallback).
+    -->
+    <!--seo:start-->
+    <title data-seo-ssr>Building Bridges | Touching Nations, Changing Lives</title>
+    <meta name="description" content="Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA." data-seo-ssr />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" data-seo-ssr />
+    <link rel="canonical" href="https://buildingbridgesbrusa.org/" data-seo-ssr />
+    <meta property="og:site_name" content="Building Bridges Foundation" data-seo-ssr />
+    <meta property="og:type" content="website" data-seo-ssr />
+    <meta property="og:title" content="Building Bridges | Touching Nations, Changing Lives" data-seo-ssr />
+    <meta property="og:description" content="Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA." data-seo-ssr />
+    <meta property="og:url" content="https://buildingbridgesbrusa.org/" data-seo-ssr />
+    <meta property="og:locale" content="en_US" data-seo-ssr />
+    <meta property="og:locale:alternate" content="pt_BR" data-seo-ssr />
+    <meta property="og:locale:alternate" content="es_MX" data-seo-ssr />
+    <meta property="og:image" content="https://buildingbridgesbrusa.org/og-image.png" data-seo-ssr />
+    <meta property="og:image:secure_url" content="https://buildingbridgesbrusa.org/og-image.png" data-seo-ssr />
+    <meta property="og:image:alt" content="Building Bridges Foundation logo — Touching Nations, Changing Lives!" data-seo-ssr />
+    <meta property="og:image:type" content="image/png" data-seo-ssr />
+    <meta property="og:image:width" content="1200" data-seo-ssr />
+    <meta property="og:image:height" content="630" data-seo-ssr />
+    <meta name="twitter:card" content="summary_large_image" data-seo-ssr />
+    <meta name="twitter:title" content="Building Bridges | Touching Nations, Changing Lives" data-seo-ssr />
+    <meta name="twitter:description" content="Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA." data-seo-ssr />
+    <meta name="twitter:image" content="https://buildingbridgesbrusa.org/og-image.png" data-seo-ssr />
+    <meta name="twitter:image:alt" content="Building Bridges Foundation logo — Touching Nations, Changing Lives!" data-seo-ssr />
+    <!--seo:end-->
+
+    <!-- Structured data (static, so crawlers that do not run JavaScript also get it) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "NGO",
+            "@id": "https://buildingbridgesbrusa.org/#organization",
+            "name": "Building Bridges Foundation",
+            "alternateName": ["Building Bridges", "Building Bridges USA"],
+            "url": "https://buildingbridgesbrusa.org/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://buildingbridgesbrusa.org/icon-512.png",
+              "width": 512,
+              "height": 512
+            },
+            "image": "https://buildingbridgesbrusa.org/og-image.png",
+            "slogan": "Touching Nations, Changing Lives!",
+            "description": "Humanitarian disaster relief and support for families in need, disaster-stricken cities, and vulnerable individuals in Brazil and the USA.",
+            "areaServed": [
+              { "@type": "Country", "name": "United States" },
+              { "@type": "Country", "name": "Brazil" }
+            ],
+            "address": { "@type": "PostalAddress", "addressRegion": "GA", "addressCountry": "US" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://buildingbridgesbrusa.org/#website",
+            "url": "https://buildingbridgesbrusa.org/",
+            "name": "Building Bridges Foundation",
+            "inLanguage": ["en", "pt-BR", "es-MX"],
+            "publisher": { "@id": "https://buildingbridgesbrusa.org/#organization" }
+          }
+        ]
+      }
+    </script>
+
     <!-- Theme Settings -->
     <meta name="theme-color" content="#FF6B00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Building Bridges" />
-    <link rel="apple-touch-icon" href="/logo_building_bridges.png" />
-    
-    <!-- Favicon and fonts -->
-    <link rel="icon" type="image/png" href="/src/assets/logo_building_bridges.png" />
+
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>Building Bridges Foundation — humanitarian disaster relief in Brazil and the USA. Please enable JavaScript to use this site.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

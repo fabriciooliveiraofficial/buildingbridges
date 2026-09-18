@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { parseImages } from '../lib/imageUtils';
+import { AccountSecurityPanel } from '../components/AccountSecurityPanel';
+import { SEO } from '../components/SEO';
 
 export const AdminPage: React.FC = () => {
   const { t } = useTranslation();
@@ -10,8 +12,8 @@ export const AdminPage: React.FC = () => {
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
-  // Console state: 'mission', 'initiative', or 'pledges'
-  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative' | 'pledges'>('mission');
+  // Console state: 'mission', 'initiative', 'pledges' or 'account'
+  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative' | 'pledges' | 'account'>('mission');
 
   // UI state for showing list vs form
   const [showForm, setShowForm] = useState(false);
@@ -462,6 +464,7 @@ export const AdminPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+      <SEO fallbackTitle="Admin Console | Building Bridges" noindex />
       {/* Console Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 border-b border-slate-100 pb-8 shrink-0">
         <div className="flex items-center gap-4">
@@ -509,6 +512,18 @@ export const AdminPage: React.FC = () => {
           >
             Apoios Recebidos
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveConsole('account')}
+            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all w-full md:w-auto flex items-center justify-center gap-1.5 ${
+              activeConsole === 'account'
+                ? 'bg-white shadow-sm text-primary'
+                : 'text-slate-500 hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">manage_accounts</span>
+            Minha Conta
+          </button>
         </div>
       </div>
 
@@ -533,7 +548,10 @@ export const AdminPage: React.FC = () => {
       )}
 
       {/* Active Form, Listing, or Pledges Dashboard */}
-      {activeConsole === 'pledges' ? (
+      {activeConsole === 'account' ? (
+        // ================== ACCOUNT SECURITY (password / recovery e-mail) ==================
+        <AccountSecurityPanel />
+      ) : activeConsole === 'pledges' ? (
         // ================== PLEDGES LIST DASHBOARD ==================
         <div className="bg-white rounded-3xl border border-primary/5 shadow-xl p-6 sm:p-8 space-y-6">
           <div className="flex justify-between items-center border-b border-slate-100 pb-6 shrink-0">

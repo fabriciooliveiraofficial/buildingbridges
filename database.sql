@@ -55,12 +55,29 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(255) NOT NULL,
   `display_name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL UNIQUE,
+  `recovery_email` VARCHAR(255) NULL,
   `password_hash` VARCHAR(255) NOT NULL,
   `password_salt` VARCHAR(255) NOT NULL,
   `role` VARCHAR(50) NOT NULL DEFAULT 'staff',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX idx_email (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ----------------------------------------------------------
+-- 3b. Table structure for `password_resets` (one-time reset links)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `password_resets` (
+  `id` VARCHAR(64) NOT NULL,
+  `user_id` VARCHAR(255) NOT NULL,
+  `token_hash` CHAR(64) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `used_at` DATETIME NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX idx_token_hash (`token_hash`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

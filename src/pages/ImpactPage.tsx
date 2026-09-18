@@ -242,12 +242,10 @@ export const ImpactPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <SEO 
-        titleKey={project ? undefined : "impact"}
-        descriptionKey={project ? undefined : "impact"}
-        fallbackTitle={project ? `${project.name} | Impact | Building Bridges` : undefined}
-        fallbackDescription={project ? project.description : undefined}
-        image={mainImage}
+      <SEO
+        fallbackTitle={`${project.name} | Building Bridges`}
+        fallbackDescription={String(project.description || project.long_description || '').replace(/\s+/g, ' ').trim().slice(0, 200) || undefined}
+        image={projectImages[0]}
       />
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
         <Link className="hover:text-primary" to="/">{t('nav.home')}</Link>

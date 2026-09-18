@@ -194,6 +194,7 @@ export const CheckoutPage: React.FC = () => {
       <SEO 
         fallbackTitle="Doe Agora | Apoio Seguro | Building Bridges" 
         fallbackDescription="Contribua com nossas ações humanitárias em tempo real. Apoio seguro processado por Stripe (USD) e Mercado Pago (BRL)."
+        noindex
       />
 
       <div className="mb-10 text-center">
