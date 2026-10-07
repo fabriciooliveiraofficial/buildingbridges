@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const ERROR_MESSAGES: Record<string, string> = {
-  WRONG_PASSWORD: 'A senha atual está incorreta.',
-  WEAK_PASSWORD: 'A nova senha deve ter entre 8 e 128 caracteres.',
-  SAME_PASSWORD: 'A nova senha deve ser diferente da atual.',
-  INVALID_EMAIL: 'Informe um e-mail válido.',
-  SAME_AS_PRIMARY: 'O e-mail de recuperação deve ser diferente do e-mail da conta.',
-  RATE_LIMITED: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-  UNAUTHORIZED: 'Sua sessão expirou. Entre novamente.',
-  MISSING_FIELDS: 'Preencha todos os campos.',
-};
+import { useTranslation } from 'react-i18next';
 
 const authFetch = async (path: string, method: string, body?: unknown) => {
   const token = localStorage.getItem('auth_token');
@@ -21,7 +11,7 @@ const authFetch = async (path: string, method: string, body?: unknown) => {
   let data: any = {};
   try { data = await res.json(); } catch { /* empty body */ }
   if (!res.ok) {
-    throw new Error(ERROR_MESSAGES[data.code] || 'Não foi possível concluir a operação. Tente novamente.');
+    throw new Error(data.code || 'UNKNOWN_ERROR');
   }
   return data;
 };
@@ -32,7 +22,7 @@ const maskEmail = (email: string) => {
   return `${user.slice(0, 1)}${'•'.repeat(Math.max(2, Math.min(user.length - 1, 6)))}@${domain}`;
 };
 
-const passwordStrength = (pw: string) => {
+const passwordStrength = (pw: string, t: (k: string) => string) => {
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
@@ -40,7 +30,10 @@ const passwordStrength = (pw: string) => {
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   const level = pw.length === 0 ? 0 : score <= 1 ? 1 : score <= 3 ? 2 : score === 4 ? 3 : 4;
-  return { level, label: ['', 'Fraca', 'Razoável', 'Boa', 'Forte'][level] };
+  return { 
+    level, 
+    label: ['', t('accountSecurity.strengthWeak'), t('accountSecurity.strengthFair'), t('accountSecurity.strengthGood'), t('accountSecurity.strengthStrong')][level] 
+  };
 };
 
 type Status = { type: 'success' | 'error'; text: string } | null;
@@ -90,7 +83,7 @@ const Field: React.FC<{
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
+            aria-label={visible ? 'Hide password' : 'Show password'}
             className="absolute right-4 top-1/2 -translate-y-1/2 size-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-xl">{visible ? 'visibility_off' : 'visibility'}</span>
@@ -121,6 +114,7 @@ const primaryButton =
   'w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed';
 
 export const AccountSecurityPanel: React.FC = () => {
+  const { t } = useTranslation();
   const [account, setAccount] = useState<{ email: string; recovery_email: string | null } | null>(null);
   const [accountError, setAccountError] = useState('');
 
@@ -141,24 +135,38 @@ export const AccountSecurityPanel: React.FC = () => {
   const [resetStatus, setResetStatus] = useState<Status>(null);
   const [resetBusy, setResetBusy] = useState(false);
 
+  const translateErrorCode = (code: string) => {
+    switch (code) {
+      case 'WRONG_PASSWORD': return t('accountSecurity.msgWrongPassword');
+      case 'WEAK_PASSWORD': return t('accountSecurity.msgWeakPassword');
+      case 'SAME_PASSWORD': return t('accountSecurity.msgSamePassword');
+      case 'INVALID_EMAIL': return t('accountSecurity.msgInvalidEmail');
+      case 'SAME_AS_PRIMARY': return t('accountSecurity.msgSameAsPrimary');
+      case 'RATE_LIMITED': return t('accountSecurity.msgRateLimited');
+      case 'UNAUTHORIZED': return t('accountSecurity.msgUnauthorized');
+      case 'MISSING_FIELDS': return t('accountSecurity.msgMissingFields');
+      default: return t('accountSecurity.msgMissingFields');
+    }
+  };
+
   useEffect(() => {
     authFetch('/api/auth/me', 'GET')
       .then((me) => {
         setAccount({ email: me.email, recovery_email: me.recovery_email || null });
         setRecoveryInput(me.recovery_email || '');
       })
-      .catch((err) => setAccountError(err.message));
+      .catch((err) => setAccountError(translateErrorCode(err.message)));
   }, []);
 
-  const strength = passwordStrength(newPassword);
+  const strength = passwordStrength(newPassword, t);
   const strengthColors = ['bg-slate-200', 'bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-success'];
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwStatus(null);
-    if (newPassword.length < 8) return setPwStatus({ type: 'error', text: ERROR_MESSAGES.WEAK_PASSWORD });
-    if (newPassword !== confirmPassword) return setPwStatus({ type: 'error', text: 'A confirmação não é igual à nova senha.' });
-    if (newPassword === currentPassword) return setPwStatus({ type: 'error', text: ERROR_MESSAGES.SAME_PASSWORD });
+    if (newPassword.length < 8) return setPwStatus({ type: 'error', text: t('accountSecurity.msgWeakPassword') });
+    if (newPassword !== confirmPassword) return setPwStatus({ type: 'error', text: t('accountSecurity.msgMismatch') });
+    if (newPassword === currentPassword) return setPwStatus({ type: 'error', text: t('accountSecurity.msgSamePassword') });
 
     setPwBusy(true);
     try {
@@ -166,9 +174,9 @@ export const AccountSecurityPanel: React.FC = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPwStatus({ type: 'success', text: 'Senha alterada com sucesso. Enviamos um aviso para o seu e-mail.' });
+      setPwStatus({ type: 'success', text: t('accountSecurity.msgChangeSuccess') });
     } catch (err: any) {
-      setPwStatus({ type: 'error', text: err.message });
+      setPwStatus({ type: 'error', text: translateErrorCode(err.message) });
     } finally {
       setPwBusy(false);
     }
@@ -184,10 +192,10 @@ export const AccountSecurityPanel: React.FC = () => {
       setRecoveryPassword('');
       setRecoveryStatus({
         type: 'success',
-        text: data.recovery_email ? 'E-mail de recuperação salvo.' : 'E-mail de recuperação removido.',
+        text: data.recovery_email ? t('accountSecurity.msgRecoverySaved') : t('accountSecurity.msgRecoveryRemoved'),
       });
     } catch (err: any) {
-      setRecoveryStatus({ type: 'error', text: err.message });
+      setRecoveryStatus({ type: 'error', text: translateErrorCode(err.message) });
     } finally {
       setRecoveryBusy(false);
     }
@@ -195,13 +203,13 @@ export const AccountSecurityPanel: React.FC = () => {
 
   const handleSaveRecovery = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recoveryPassword) return setRecoveryStatus({ type: 'error', text: 'Digite sua senha atual para confirmar.' });
-    if (!recoveryInput.trim()) return setRecoveryStatus({ type: 'error', text: 'Informe o e-mail de recuperação ou use "Remover".' });
+    if (!recoveryPassword) return setRecoveryStatus({ type: 'error', text: t('accountSecurity.confirmPasswordHint') });
+    if (!recoveryInput.trim()) return setRecoveryStatus({ type: 'error', text: t('accountSecurity.msgInvalidEmail') });
     saveRecoveryEmail(recoveryInput);
   };
 
   const handleRemoveRecovery = () => {
-    if (!recoveryPassword) return setRecoveryStatus({ type: 'error', text: 'Digite sua senha atual para confirmar.' });
+    if (!recoveryPassword) return setRecoveryStatus({ type: 'error', text: t('accountSecurity.confirmPasswordHint') });
     saveRecoveryEmail('');
   };
 
@@ -215,12 +223,12 @@ export const AccountSecurityPanel: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: account.email }),
       }).then(async (res) => {
-        if (res.status === 429) throw new Error(ERROR_MESSAGES.RATE_LIMITED);
-        if (!res.ok) throw new Error('Não foi possível enviar o link agora. Tente novamente.');
+        if (res.status === 429) throw new Error('RATE_LIMITED');
+        if (!res.ok) throw new Error('UNAUTHORIZED');
       });
-      setResetStatus({ type: 'success', text: 'Link enviado. Ele vale por 60 minutos e só pode ser usado uma vez.' });
+      setResetStatus({ type: 'success', text: t('accountSecurity.msgResetSent') });
     } catch (err: any) {
-      setResetStatus({ type: 'error', text: err.message });
+      setResetStatus({ type: 'error', text: translateErrorCode(err.message) });
     } finally {
       setResetBusy(false);
     }
@@ -232,11 +240,11 @@ export const AccountSecurityPanel: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* ---------------- Change password ---------------- */}
-        <Card icon="key" title="Alterar senha" subtitle="Use uma senha longa e exclusiva, com pelo menos 8 caracteres.">
+        <Card icon="key" title={t('accountSecurity.cardChangePasswordTitle')} subtitle={t('accountSecurity.cardChangePasswordSubtitle')}>
           <form onSubmit={handleChangePassword} className="space-y-5">
-            <Field label="Senha atual" icon="lock" type="password" reveal autoComplete="current-password" value={currentPassword} onChange={setCurrentPassword} placeholder="••••••••" />
+            <Field label={t('accountSecurity.currentPassword')} icon="lock" type="password" reveal autoComplete="current-password" value={currentPassword} onChange={setCurrentPassword} placeholder={t('accountSecurity.currentPasswordPlaceholder')} />
             <div className="space-y-3">
-              <Field label="Nova senha" icon="lock_reset" type="password" reveal autoComplete="new-password" value={newPassword} onChange={setNewPassword} placeholder="Mínimo de 8 caracteres" />
+              <Field label={t('accountSecurity.newPassword')} icon="lock_reset" type="password" reveal autoComplete="new-password" value={newPassword} onChange={setNewPassword} placeholder={t('accountSecurity.newPasswordPlaceholder')} />
               {newPassword && (
                 <div className="flex items-center gap-3 ml-1" aria-live="polite">
                   <div className="flex gap-1.5 flex-1">
@@ -248,10 +256,10 @@ export const AccountSecurityPanel: React.FC = () => {
                 </div>
               )}
             </div>
-            <Field label="Confirmar nova senha" icon="check" type="password" reveal autoComplete="new-password" value={confirmPassword} onChange={setConfirmPassword} placeholder="Repita a nova senha" />
+            <Field label={t('accountSecurity.confirmNewPassword')} icon="check" type="password" reveal autoComplete="new-password" value={confirmPassword} onChange={setConfirmPassword} placeholder={t('accountSecurity.confirmPasswordPlaceholder')} />
             <StatusBanner status={pwStatus} />
             <button disabled={pwBusy || !currentPassword || !newPassword || !confirmPassword} className={primaryButton}>
-              {pwBusy ? 'Salvando...' : 'Alterar senha'}
+              {pwBusy ? t('accountSecurity.btnSaving') : t('accountSecurity.btnChangePassword')}
               {!pwBusy && <span className="material-symbols-outlined text-lg">shield</span>}
             </button>
           </form>
@@ -260,38 +268,38 @@ export const AccountSecurityPanel: React.FC = () => {
         {/* ---------------- Recovery e-mail ---------------- */}
         <Card
           icon="alternate_email"
-          title="E-mail de recuperação"
-          subtitle="Um segundo endereço que também recebe o link de redefinição e os avisos de segurança da sua conta."
+          title={t('accountSecurity.cardRecoveryTitle')}
+          subtitle={t('accountSecurity.cardRecoverySubtitle')}
         >
           <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4 space-y-2 text-sm font-bold">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">E-mail da conta</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('accountSecurity.accountEmailLabel')}</span>
               <span className="text-slate-700 truncate">{account?.email || '—'}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recuperação</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('accountSecurity.recoveryEmailLabel')}</span>
               <span className={`truncate ${account?.recovery_email ? 'text-slate-700' : 'text-slate-400 italic'}`}>
-                {account ? account.recovery_email || 'Não cadastrado' : '—'}
+                {account ? account.recovery_email || t('accountSecurity.notRegistered') : '—'}
               </span>
             </div>
           </div>
 
           <form onSubmit={handleSaveRecovery} className="space-y-5">
             <Field
-              label={account?.recovery_email ? 'Novo e-mail de recuperação' : 'E-mail de recuperação'}
+              label={account?.recovery_email ? t('accountSecurity.newRecoveryEmailLabel') : t('accountSecurity.recoveryEmailLabel')}
               icon="mail"
               type="email"
               autoComplete="email"
               value={recoveryInput}
               onChange={setRecoveryInput}
-              placeholder="outro.email@exemplo.com"
-              hint="Precisa ser diferente do e-mail da conta."
+              placeholder="email@example.com"
+              hint={t('accountSecurity.recoveryEmailHint')}
             />
-            <Field label="Senha atual (para confirmar)" icon="lock" type="password" reveal autoComplete="current-password" value={recoveryPassword} onChange={setRecoveryPassword} placeholder="••••••••" />
+            <Field label={t('accountSecurity.confirmPasswordHint')} icon="lock" type="password" reveal autoComplete="current-password" value={recoveryPassword} onChange={setRecoveryPassword} placeholder="••••••••" />
             <StatusBanner status={recoveryStatus} />
             <div className="flex flex-col sm:flex-row gap-3">
               <button disabled={recoveryBusy} className={primaryButton}>
-                {recoveryBusy ? 'Salvando...' : account?.recovery_email ? 'Atualizar e-mail' : 'Salvar e-mail'}
+                {recoveryBusy ? t('accountSecurity.btnSaving') : account?.recovery_email ? t('accountSecurity.btnUpdateEmail') : t('accountSecurity.btnSaveEmail')}
               </button>
               {account?.recovery_email && (
                 <button
@@ -300,7 +308,7 @@ export const AccountSecurityPanel: React.FC = () => {
                   disabled={recoveryBusy}
                   className="w-full sm:w-auto px-6 py-4 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-500 border border-slate-200 rounded-xl font-black text-sm transition-colors disabled:opacity-50"
                 >
-                  Remover
+                  {t('accountSecurity.btnRemove')}
                 </button>
               )}
             </div>
@@ -311,22 +319,22 @@ export const AccountSecurityPanel: React.FC = () => {
       {/* ---------------- Send reset link ---------------- */}
       <Card
         icon="mark_email_read"
-        title="Recuperar senha por e-mail"
-        subtitle="Esqueceu a senha ou suspeita que alguém a descobriu? Enviamos um link seguro para criar uma nova."
+        title={t('accountSecurity.cardResetTitle')}
+        subtitle={t('accountSecurity.cardResetSubtitle')}
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="text-sm font-bold text-slate-600 leading-relaxed">
-            O link (válido por 60 minutos, uso único) será enviado para{' '}
+            {t('accountSecurity.resetInfoText')}{' '}
             <span className="text-primary">{account ? maskEmail(account.email) : '…'}</span>
             {account?.recovery_email && (
               <>
-                {' '}e para <span className="text-primary">{maskEmail(account.recovery_email)}</span>
+                {' '}& <span className="text-primary">{maskEmail(account.recovery_email)}</span>
               </>
             )}
             .
           </div>
           <button type="button" onClick={handleSendResetLink} disabled={resetBusy || !account} className={`${primaryButton} lg:shrink-0`}>
-            {resetBusy ? 'Enviando...' : 'Enviar link de redefinição'}
+            {resetBusy ? t('accountSecurity.sendingResetLink') : t('accountSecurity.sendResetLink')}
             {!resetBusy && <span className="material-symbols-outlined text-lg">send</span>}
           </button>
         </div>

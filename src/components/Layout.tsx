@@ -278,13 +278,13 @@ export const Header: React.FC = () => {
                 <span className="font-bold text-sm hidden lg:block">{t('nav.admin') || 'Admin'}</span>
               </Link>
               <div className="hidden lg:block text-right">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Staff Access</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('nav.staffAccess')}</p>
                 <p className="text-sm font-bold text-primary line-clamp-1 max-w-[100px]">{profile?.displayName || user.email}</p>
               </div>
               <button 
                 onClick={handleLogout}
                 className="size-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"
-                title="Logout"
+                title={t('nav.signOut')}
               >
                 <span className="material-symbols-outlined">logout</span>
               </button>
@@ -293,7 +293,7 @@ export const Header: React.FC = () => {
             <Link 
               to="/login" 
               className="size-10 bg-primary/5 rounded-full flex items-center justify-center text-slate-400 hover:text-primary transition-colors"
-              title="Staff Login"
+              title={t('auth.staffLogin')}
             >
               <span className="material-symbols-outlined">admin_panel_settings</span>
             </Link>
@@ -329,7 +329,7 @@ export const Footer: React.FC = () => {
   return (
     <footer className="relative bg-background-light border-t border-primary/10">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden="true"></div>
-      <div className="max-w-7xl mx-auto px-6 py-12 lg:py-14 flex flex-col md:flex-row md:items-center gap-8 md:gap-12 lg:gap-16">
+      <div className="max-w-7xl mx-auto px-6 py-12 lg:py-14 flex flex-col md:flex-row md:items-center justify-between gap-8 md:gap-12 lg:gap-16">
         <Link to="/" className="flex items-center gap-4 shrink-0 group" aria-label="Building Bridges">
           <img src={logoUrl} alt="" className="h-16 w-16 lg:h-20 lg:w-20 object-contain transition-transform duration-300 group-hover:scale-105" />
           <div>
@@ -337,6 +337,11 @@ export const Footer: React.FC = () => {
             <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-accent">{t('hero.title')} {t('hero.subtitle')}</p>
           </div>
         </Link>
+        <div className="flex flex-wrap items-center gap-6 text-xs font-bold text-slate-600">
+          <Link to="/privacy" className="hover:text-primary transition-colors">{t('footer.privacy')}</Link>
+          <Link to="/terms" className="hover:text-primary transition-colors">{t('footer.terms')}</Link>
+          <Link to="/contact" className="hover:text-primary transition-colors">{t('footer.contact')}</Link>
+        </div>
         <div className="hidden md:block w-px self-stretch bg-primary/10" aria-hidden="true"></div>
         <div className="max-w-2xl">
           <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">{t('footer.legal')}</p>

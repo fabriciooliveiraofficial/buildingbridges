@@ -252,13 +252,13 @@ export const InitiativesPage: React.FC = () => {
       <div className="max-w-3xl mx-auto text-center mb-16 space-y-6">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent font-black text-xs uppercase tracking-widest">
           <span className="material-symbols-outlined text-sm">volunteer_activism</span>
-          Hub de Ação Coletiva
+          {t('initiatives.badge')}
         </div>
         <h1 className="text-4xl md:text-6xl font-black text-primary leading-tight">
-          Apoie com uma <span className="text-accent">Iniciativa Solidária</span>
+          {t('initiatives.title')} <span className="text-accent">{t('initiatives.titleHighlight')}</span>
         </h1>
         <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed">
-          Nossa rede de voluntários cria produtos físicos e atividades incríveis para financiar os projetos. Ao participar ou adquirir, **100% da arrecadação líquida** vai direto para saneamento, alimentação e abrigos no campo.
+          {t('initiatives.subtitle')}
         </p>
         
         {/* Filters */}
@@ -271,7 +271,7 @@ export const InitiativesPage: React.FC = () => {
                 : 'bg-white border-slate-100 hover:border-primary/20 text-slate-600'
             }`}
           >
-            Todos
+            {t('initiatives.filterAll')}
           </button>
           <button 
             onClick={() => setFilter('item')}
@@ -281,7 +281,7 @@ export const InitiativesPage: React.FC = () => {
                 : 'bg-white border-slate-100 hover:border-primary/20 text-slate-600'
             }`}
           >
-            Símbolos de Apoio (Itens)
+            {t('initiatives.filterItems')}
           </button>
           <button 
             onClick={() => setFilter('experience')}
@@ -291,7 +291,7 @@ export const InitiativesPage: React.FC = () => {
                 : 'bg-white border-slate-100 hover:border-primary/20 text-slate-600'
             }`}
           >
-            Atividades Coletivas (Experiências)
+            {t('initiatives.filterExperiences')}
           </button>
         </div>
       </div>
@@ -327,10 +327,10 @@ export const InitiativesPage: React.FC = () => {
                   </div>
                   <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
                     <span className="bg-primary text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md">
-                      {item.type === 'item' ? 'Símbolo de Apoio' : 'Atividade Coletiva'}
+                      {item.type === 'item' ? t('initiatives.tagItem') : t('initiatives.tagExperience')}
                     </span>
                     <span className="bg-white/95 backdrop-blur-sm text-slate-700 text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md border border-slate-100">
-                      🎯 Projeto: {projects[item.project_id] || 'Geral'}
+                      🎯 {t('initiatives.tagProject')}: {projects[item.project_id] || t('initiatives.generalProject')}
                     </span>
                   </div>
                 </div>
@@ -345,7 +345,7 @@ export const InitiativesPage: React.FC = () => {
                   {/* Value (Checkout) */}
                   <div className="space-y-4 mt-auto">
                     <div className="shrink-0">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Contribuição Sugerida</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t('initiatives.suggestedContribution')}</p>
                       <p className="text-xl font-black text-accent">{formatAmount(item.suggested_price)}</p>
                     </div>
 
@@ -354,7 +354,7 @@ export const InitiativesPage: React.FC = () => {
                       className="w-full py-4 rounded-xl bg-primary text-white font-black text-sm hover:bg-primary/95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/5"
                     >
                       <span className="material-symbols-outlined text-lg">volunteer_activism</span>
-                      {item.type === 'item' ? 'Adquirir e Apoiar' : 'Fazer Inscrição Solidária'}
+                      {item.type === 'item' ? t('initiatives.btnAcquire') : t('initiatives.btnRegister')}
                     </button>
                   </div>
                 </div>
@@ -365,7 +365,7 @@ export const InitiativesPage: React.FC = () => {
       ) : (
         <div className="py-20 text-center">
           <span className="material-symbols-outlined text-6xl text-slate-200 mb-4">search_off</span>
-          <p className="text-xl font-bold text-slate-400">Nenhuma iniciativa encontrada para esta categoria.</p>
+          <p className="text-xl font-bold text-slate-400">{t('initiatives.notFound')}</p>
         </div>
       )}
 
@@ -373,8 +373,8 @@ export const InitiativesPage: React.FC = () => {
       {verificationLoading && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center text-white">
           <div className="size-16 border-4 border-accent border-t-transparent rounded-full animate-spin mb-6"></div>
-          <h3 className="text-2xl font-black uppercase tracking-widest">{t('projects.loading') || 'Processando...'}</h3>
-          <p className="text-slate-400 mt-2 font-medium">Validando o seu pagamento com o gateway seguro de apoio...</p>
+          <h3 className="text-2xl font-black uppercase tracking-widest">{t('projects.loading')}</h3>
+          <p className="text-slate-400 mt-2 font-medium">{t('initiatives.validationLoading')}</p>
         </div>
       )}
 
@@ -390,7 +390,7 @@ export const InitiativesPage: React.FC = () => {
             <div className="size-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-4xl">error</span>
             </div>
-            <h3 className="text-2xl font-black text-primary mb-2">Falha na Validação</h3>
+            <h3 className="text-2xl font-black text-primary mb-2">{t('initiatives.validationFailedTitle')}</h3>
             <p className="text-slate-500 font-bold text-sm leading-relaxed mb-6">
               {verificationError}
             </p>
@@ -398,7 +398,7 @@ export const InitiativesPage: React.FC = () => {
               onClick={() => setVerificationError('')}
               className="px-6 py-3 bg-primary hover:bg-slate-800 text-white font-black text-sm rounded-xl transition-all"
             >
-              Fechar
+              {t('initiatives.closeModal')}
             </button>
           </motion.div>
         </div>

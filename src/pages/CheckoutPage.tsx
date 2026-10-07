@@ -180,10 +180,10 @@ export const CheckoutPage: React.FC = () => {
     const kits = Math.round(amountInBrl / 50);
 
     if (meals < 10) {
-      return `Com este valor voluntário, forneceremos aproximadamente ${meals} refeições quentes completas para famílias afetadas.`;
+      return t('checkout.impactShort', { meals });
     }
     
-    return `Essa doação fornecerá aproximadamente ${meals} refeições nutritivas completas ou ${kits} kits de emergência e mudas nativas ecológicas nas zonas de impacto afetadas.`;
+    return t('checkout.impactDesc', { meals, kits });
   };
 
   const finalAmount = getFinalAmount();
@@ -192,8 +192,8 @@ export const CheckoutPage: React.FC = () => {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
       <SEO 
-        fallbackTitle="Doe Agora | Apoio Seguro | Building Bridges" 
-        fallbackDescription="Contribua com nossas ações humanitárias em tempo real. Apoio seguro processado por Stripe (USD) e Mercado Pago (BRL)."
+        fallbackTitle={`${t('checkout.title')} | Building Bridges`} 
+        fallbackDescription={t('checkout.subtitle')}
         noindex
       />
 
@@ -201,10 +201,10 @@ export const CheckoutPage: React.FC = () => {
         <nav className="flex justify-center items-center gap-2 text-sm text-slate-500 mb-4">
           <Link className="hover:text-primary" to="/">{t('nav.home')}</Link>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
-          <span className="font-semibold text-primary dark:text-slate-200">Doe Agora</span>
+          <span className="font-semibold text-primary dark:text-slate-200">{t('checkout.breadcrumb')}</span>
         </nav>
-        <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Portal de Apoio Solidário</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400 font-bold text-sm">Sua contribuição direta chega integralmente às famílias necessitadas.</p>
+        <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('checkout.portalTitle')}</h1>
+        <p className="mt-2 text-slate-600 dark:text-slate-400 font-bold text-sm">{t('checkout.portalSubtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -215,13 +215,13 @@ export const CheckoutPage: React.FC = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-black text-primary uppercase tracking-tight flex items-center gap-2">
               <span className="bg-primary/10 text-primary size-7 rounded-lg flex items-center justify-center text-xs">1</span>
-              Destino e Moeda
+              {t('checkout.step1')}
             </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Select Project */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Humanitarian Project</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('checkout.projectLabel')}</label>
                 {projectsLoading ? (
                   <div className="h-14 bg-slate-100 animate-pulse rounded-xl" />
                 ) : (
@@ -247,7 +247,7 @@ export const CheckoutPage: React.FC = () => {
 
               {/* Currency Selector (Dynamic Routing) */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Moeda e Gateway de Pagamento</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('checkout.currencyLabel')}</label>
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
                   <button 
                     type="button"
@@ -281,7 +281,7 @@ export const CheckoutPage: React.FC = () => {
 
             {selectedProjDetails && (
               <p className="text-[11px] text-slate-500 leading-relaxed font-bold bg-slate-50 dark:bg-slate-900 border border-slate-100 p-3.5 rounded-xl mt-1.5">
-                ℹ️ <strong>Foco:</strong> {selectedProjDetails.description}
+                ℹ️ <strong>{t('checkout.focusLabel')}</strong> {selectedProjDetails.description}
               </p>
             )}
           </div>
@@ -290,7 +290,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-black text-primary uppercase tracking-tight flex items-center gap-2">
               <span className="bg-primary/10 text-primary size-7 rounded-lg flex items-center justify-center text-xs">2</span>
-              Valor da Contribuição
+              {t('checkout.step2')}
             </h3>
 
             {/* Predefined Tiers */}
@@ -303,7 +303,7 @@ export const CheckoutPage: React.FC = () => {
                 }`}
               >
                 <span>{selectedCurrency === 'BRL' ? 'R$' : '$'}{t1}</span>
-                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Apoio Básico</span>
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t('checkout.tierBasic')}</span>
               </button>
               <button 
                 type="button" 
@@ -313,7 +313,7 @@ export const CheckoutPage: React.FC = () => {
                 }`}
               >
                 <span>{selectedCurrency === 'BRL' ? 'R$' : '$'}{t2}</span>
-                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Apoio Essencial</span>
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t('checkout.tierEssential')}</span>
               </button>
               <button 
                 type="button" 
@@ -323,7 +323,7 @@ export const CheckoutPage: React.FC = () => {
                 }`}
               >
                 <span>{selectedCurrency === 'BRL' ? 'R$' : '$'}{t3}</span>
-                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Apoio Ampliado</span>
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t('checkout.tierExpanded')}</span>
               </button>
               <button 
                 type="button" 
@@ -332,7 +332,7 @@ export const CheckoutPage: React.FC = () => {
                   donationTier === 'custom' ? 'border-accent bg-accent/5 text-accent' : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-slate-50/50'
                 }`}
               >
-                <span>Outro Valor</span>
+                <span>{t('checkout.customTier')}</span>
               </button>
             </div>
 
@@ -346,7 +346,7 @@ export const CheckoutPage: React.FC = () => {
                   required
                   type="number"
                   min="5"
-                  placeholder="Valor personalizado"
+                  placeholder={t('checkout.customPlaceholder')}
                   value={customDonation}
                   onChange={(e) => setCustomDonation(e.target.value)}
                   className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-2xl py-4 pl-14 pr-6 outline-none font-black text-slate-800 text-lg shadow-inner"
@@ -359,7 +359,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-black text-primary uppercase tracking-tight flex items-center gap-2">
               <span className="bg-primary/10 text-primary size-7 rounded-lg flex items-center justify-center text-xs">3</span>
-              Dados do Apoiador
+              {t('checkout.step3')}
             </h3>
 
             {checkoutError && (
@@ -371,24 +371,24 @@ export const CheckoutPage: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('impact.name')}</label>
                   <input 
                     required
                     type="text"
                     value={supporterName}
                     onChange={(e) => setSupporterName(e.target.value)}
-                    placeholder="Nome completo do doador"
+                    placeholder={t('checkout.namePlaceholder')}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-3 px-4 outline-none font-bold text-slate-800 transition-all"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E-mail</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('impact.email')}</label>
                   <input 
                     required
                     type="email"
                     value={supporterEmail}
                     onChange={(e) => setSupporterEmail(e.target.value)}
-                    placeholder="email@exemplo.com"
+                    placeholder={t('checkout.emailPlaceholder')}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-3 px-4 outline-none font-bold text-slate-800 transition-all"
                   />
                 </div>
@@ -396,23 +396,23 @@ export const CheckoutPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp / Telefone</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('impact.phone')}</label>
                   <input 
                     required
                     type="tel"
                     value={supporterPhone}
                     onChange={(e) => setSupporterPhone(e.target.value)}
-                    placeholder="+55 11 99999-9999"
+                    placeholder={t('checkout.phonePlaceholder')}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-3 px-4 outline-none font-bold text-slate-800 transition-all"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notas Opcionais</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('impact.notes')}</label>
                   <input 
                     type="text"
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
-                    placeholder="Escreva uma mensagem de força"
+                    placeholder={t('checkout.notesPlaceholder')}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-3 px-4 outline-none font-bold text-slate-800 transition-all"
                   />
                 </div>
@@ -430,12 +430,12 @@ export const CheckoutPage: React.FC = () => {
               {submittingCheckout ? (
                 <>
                   <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Iniciando Checkout Seguro...
+                  {t('impact.processing')}
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-lg">credit_score</span>
-                  DOAÇÃO SEGURA
+                  {t('donation.proceed')}
                 </>
               )}
             </button>
@@ -444,7 +444,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="bg-success/5 border border-success/15 rounded-2xl p-4 text-center flex items-center justify-center gap-2">
             <span className="material-symbols-outlined text-success text-lg">shield_with_heart</span>
             <span className="text-[10px] font-black text-success uppercase tracking-widest">
-              Conexão criptografada de alta segurança homologada ({selectedCurrency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
+              {t('donation.secure')} ({selectedCurrency === 'BRL' ? 'Mercado Pago' : 'Stripe'})
             </span>
           </div>
 

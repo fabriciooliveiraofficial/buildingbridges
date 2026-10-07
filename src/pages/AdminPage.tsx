@@ -488,7 +488,7 @@ export const AdminPage: React.FC = () => {
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Projetos
+            {t('admin.tabMissions')}
           </button>
           <button 
             type="button"
@@ -499,7 +499,7 @@ export const AdminPage: React.FC = () => {
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Iniciativas (Vendas)
+            {t('admin.tabInitiatives')}
           </button>
           <button 
             type="button"
@@ -510,7 +510,7 @@ export const AdminPage: React.FC = () => {
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Apoios Recebidos
+            {t('admin.tabPledges')}
           </button>
           <button
             type="button"
@@ -522,7 +522,7 @@ export const AdminPage: React.FC = () => {
             }`}
           >
             <span className="material-symbols-outlined text-base">manage_accounts</span>
-            Minha Conta
+            {t('admin.tabAccount')}
           </button>
         </div>
       </div>
@@ -1262,10 +1262,9 @@ export const AdminPage: React.FC = () => {
                 <span className="material-symbols-outlined text-4xl">warning</span>
               </div>
               
-              <h3 className="text-2xl font-black text-primary mb-2">Excluir Registro?</h3>
+              <h3 className="text-2xl font-black text-primary mb-2">{t('admin.deleteConfirmTitle')}</h3>
               <p className="text-slate-500 font-semibold text-sm leading-relaxed mb-6">
-                Você está prestes a excluir permanentemente o item: <strong className="text-slate-800">"{deleteConfirm.name}"</strong>.
-                {deleteConfirm.type === 'mission' && ' Essa exclusão em cascata apagará também todas as iniciativas vinculadas a este projeto.'} Esta ação não poderá ser desfeita.
+                {t('admin.deleteConfirmDesc', { name: deleteConfirm.name })}
               </p>
 
               <div className="flex gap-4">
@@ -1274,7 +1273,7 @@ export const AdminPage: React.FC = () => {
                   onClick={() => setDeleteConfirm(null)}
                   className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-sm transition-all"
                 >
-                  Cancelar
+                  {t('admin.btnCancel')}
                 </button>
                 <button 
                   disabled={loading}
@@ -1282,7 +1281,7 @@ export const AdminPage: React.FC = () => {
                   onClick={handleConfirmDelete}
                   className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black text-sm transition-all shadow-lg shadow-red-500/25 flex items-center justify-center gap-1.5"
                 >
-                  {loading ? 'Excluindo...' : 'Sim, Excluir'}
+                  {loading ? t('projects.loading') : t('admin.btnDelete')}
                   {!loading && <span className="material-symbols-outlined text-base">delete_forever</span>}
                 </button>
               </div>

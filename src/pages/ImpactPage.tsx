@@ -402,7 +402,7 @@ export const ImpactPage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('missions.support')}</h3>
-                <p className="text-xs text-slate-500 font-bold">Ajude diretamente a financiar esse projeto humanitário.</p>
+                <p className="text-xs text-slate-500 font-bold">{t('impact.supportDesc')}</p>
               </div>
 
               {/* Tier options */}
@@ -412,21 +412,21 @@ export const ImpactPage: React.FC = () => {
                   className="py-3.5 px-4 rounded-xl border-2 border-slate-100 hover:border-success text-sm font-black text-slate-700 dark:text-slate-200 transition-colors bg-slate-50/50 hover:bg-success/5 flex flex-col items-center gap-0.5"
                 >
                   <span className="text-success">{currency === 'BRL' ? 'R$' : '$'}{t1}</span>
-                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Apoio Essencial</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">{t('impact.tierBasic')}</span>
                 </button>
                 <button 
                   onClick={() => handleSupportClick('tier2')}
                   className="py-3.5 px-4 rounded-xl border-2 border-slate-100 hover:border-success text-sm font-black text-slate-700 dark:text-slate-200 transition-colors bg-slate-50/50 hover:bg-success/5 flex flex-col items-center gap-0.5"
                 >
                   <span className="text-success">{currency === 'BRL' ? 'R$' : '$'}{t2}</span>
-                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Apoio Estendido</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">{t('impact.tierEssential')}</span>
                 </button>
                 <button 
                   onClick={() => handleSupportClick('tier3')}
                   className="py-3.5 px-4 rounded-xl border-2 border-slate-100 hover:border-success text-sm font-black text-slate-700 dark:text-slate-200 transition-colors bg-slate-50/50 hover:bg-success/5 flex flex-col items-center gap-0.5"
                 >
                   <span className="text-success">{currency === 'BRL' ? 'R$' : '$'}{t3}</span>
-                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">Apoio Máximo</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider">{t('impact.tierExpanded')}</span>
                 </button>
                 <button 
                   onClick={() => handleSupportClick('custom')}
@@ -441,7 +441,7 @@ export const ImpactPage: React.FC = () => {
                 className="w-full bg-primary hover:bg-primary/95 text-white py-4.5 rounded-xl font-black text-sm shadow-xl shadow-primary/10 transition-all flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">volunteer_activism</span>
-                Apoiar Projeto Urgente
+                {t('missions.support')}
               </button>
             </div>
           </div>
@@ -452,8 +452,8 @@ export const ImpactPage: React.FC = () => {
       {verificationLoading && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center text-white">
           <div className="size-16 border-4 border-success border-t-transparent rounded-full animate-spin mb-6"></div>
-          <h3 className="text-2xl font-black uppercase tracking-widest">{t('projects.loading') || 'Processando...'}</h3>
-          <p className="text-slate-400 mt-2 font-medium">Validando a sua contribuição com o gateway de apoio seguro...</p>
+          <h3 className="text-2xl font-black uppercase tracking-widest">{t('projects.loading')}</h3>
+          <p className="text-slate-400 mt-2 font-medium">{t('initiatives.validationLoading')}</p>
         </div>
       )}
 
@@ -469,7 +469,7 @@ export const ImpactPage: React.FC = () => {
             <div className="size-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-4xl">error</span>
             </div>
-            <h3 className="text-2xl font-black text-primary mb-2">Falha na Validação</h3>
+            <h3 className="text-2xl font-black text-primary mb-2">{t('impact.failTitle')}</h3>
             <p className="text-slate-500 font-bold text-sm leading-relaxed mb-6">
               {verificationError}
             </p>
@@ -477,7 +477,7 @@ export const ImpactPage: React.FC = () => {
               onClick={() => setVerificationError('')}
               className="px-6 py-3 bg-primary hover:bg-slate-800 text-white font-black text-sm rounded-xl transition-all"
             >
-              Fechar
+              {t('initiatives.closeModal')}
             </button>
           </motion.div>
         </div>
