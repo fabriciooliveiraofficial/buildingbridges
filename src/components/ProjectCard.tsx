@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getTranslatedProject } from '../lib/projectTranslations';
 
 interface Project {
   id: string;
@@ -9,14 +10,16 @@ interface Project {
   goal_amount: number;
   raised_amount: number;
   status: string;
+  category?: string;
 }
 
 interface ProjectCardProps {
   project: Project;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const { t } = useTranslation();
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project: rawProject }) => {
+  const { t, i18n } = useTranslation();
+  const project = getTranslatedProject(rawProject, i18n.language);
 
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 p-6 flex flex-col">

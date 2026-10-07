@@ -8,13 +8,15 @@ import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
 import { parseImages } from '../lib/imageUtils';
 import { Lightbox } from '../components/Lightbox';
+import { getTranslatedProject } from '../lib/projectTranslations';
 
 export const ImpactPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { currency, formatAmount, rate } = useCurrency();
   const [activeTab, setActiveTab] = useState<'story' | 'budget' | 'updates'>('story');
-  const [project, setProject] = useState<any>(null);
+  const [rawProject, setProject] = useState<any>(null);
+  const project = getTranslatedProject(rawProject, i18n.language);
   const [loading, setLoading] = useState(true);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);

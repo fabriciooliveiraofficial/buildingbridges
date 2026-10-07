@@ -7,9 +7,10 @@ import { supabase } from '../lib/supabase';
 import { SEO } from '../components/SEO';
 import { parseImages } from '../lib/imageUtils';
 import { Lightbox } from '../components/Lightbox';
+import { getTranslatedProject } from '../lib/projectTranslations';
 
 export const HomePage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currency, rate } = useCurrency();
   const [donationAmount, setDonationAmount] = useState<string>('100');
   const [projects, setProjects] = useState<any[]>([]);
@@ -165,7 +166,8 @@ export const HomePage: React.FC = () => {
             {loading ? (
               <div className="col-span-full text-center py-10 font-bold text-slate-400 italic">{t('projects.loading')}</div>
             ) : projects.length > 0 ? (
-              projects.map((project) => {
+              projects.map((rawProject) => {
+                const project = getTranslatedProject(rawProject, i18n.language);
                 const projectImages = parseImages(project.image_url);
                 const mainImage = projectImages[0] || 'https://picsum.photos/seed/relief/800/600';
                 return (

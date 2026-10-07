@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,6 +7,7 @@ import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
 import { parseImages } from '../lib/imageUtils';
 import { Lightbox } from '../components/Lightbox';
+import { getTranslatedProject, getTranslatedInitiative } from '../lib/projectTranslations';
 
 interface Initiative {
   id: string;
@@ -29,10 +30,17 @@ interface Project {
 }
 
 export const InitiativesPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currency, formatAmount, rate } = useCurrency();
   const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [projects, setProjects] = useState<Record<string, string>>({});
+  const [rawProjects, setRawProjects] = useState<Project[]>([]);
+  const projects = useMemo(() => {
+    const map: Record<string, string> = {};
+    rawProjects.forEach((p) => {
+      map[p.id] = getTranslatedProject(p, i18n.language).name;
+    });
+    return map;
+  }, [rawProjects, i18n.language]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'item' | 'experience'>('all');
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -90,11 +98,7 @@ export const InitiativesPage: React.FC = () => {
         const projData = await projResponse.json();
 
         if (projData) {
-          const projMap: Record<string, string> = {};
-          projData.forEach((p: Project) => {
-            projMap[p.id] = p.name;
-          });
-          setProjects(projMap);
+          setRawProjects(projData);
         }
 
         if (initData) {
@@ -299,7 +303,8 @@ export const InitiativesPage: React.FC = () => {
       {/* Initiatives Grid */}
       {filteredInitiatives.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredInitiatives.map((item) => {
+          {filteredInitiatives.map((rawItem) => {
+            const item = getTranslatedInitiative(rawItem, i18n.language);
             const itemImages = parseImages(item.image_url);
             const mainImage = itemImages[0] || 'https://picsum.photos/seed/default-initiative/800/600';
             return (

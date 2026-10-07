@@ -5,9 +5,10 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
+import { getTranslatedProjects } from '../lib/projectTranslations';
 
 export const CheckoutPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currency, formatAmount, rate } = useCurrency();
   
   // Checkout & Gateway state
@@ -187,7 +188,8 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const finalAmount = getFinalAmount();
-  const selectedProjDetails = projectsList.find(p => p.id === selectedProject);
+  const displayProjectsList = getTranslatedProjects(projectsList, i18n.language);
+  const selectedProjDetails = displayProjectsList.find(p => p.id === selectedProject);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -230,15 +232,15 @@ export const CheckoutPage: React.FC = () => {
                     onChange={(e) => setSelectedProject(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-3 px-4 outline-none font-bold text-slate-800 appearance-none transition-all cursor-pointer"
                   >
-                    {projectsList.length > 0 ? (
-                      projectsList.map(proj => (
+                    {displayProjectsList.length > 0 ? (
+                      displayProjectsList.map(proj => (
                         <option key={proj.id} value={proj.id}>{proj.name}</option>
                       ))
                     ) : (
                       <>
-                        <option value="rio-grande">Rio Grande do Sul Relief</option>
-                        <option value="gulf-coast">Gulf Coast Resilience</option>
-                        <option value="amazon-basin">Amazon Basin Canopy Restoration</option>
+                        <option value="rio-grande">{t('missions.rio.title')}</option>
+                        <option value="gulf-coast">{t('missions.gulf.title')}</option>
+                        <option value="amazon-basin">{t('missions.amazon.title')}</option>
                       </>
                     )}
                   </select>

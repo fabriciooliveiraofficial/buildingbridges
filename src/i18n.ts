@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 const resources = {
   en: {
@@ -1112,11 +1111,41 @@ const resources = {
   }
 };
 
+// Clean up legacy detector key from localStorage if previously set by browser detection
+try {
+  localStorage.removeItem('i18nextLng');
+} catch {
+  // ignore
+}
+
+// On first access or every fresh visit, the default language must ALWAYS be English ('en').
+// If the user actively chose another language in the current session (via the widget) or passed ?lng=, respect it.
+const getInitialLanguage = (): string => {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const paramLng = params.get('lng') || params.get('lang');
+      if (paramLng && ['en', 'pt', 'es'].includes(paramLng)) {
+        return paramLng;
+      }
+      const sessionLng = sessionStorage.getItem('bb_lang');
+      if (sessionLng && ['en', 'pt', 'es'].includes(sessionLng)) {
+        return sessionLng;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return 'en';
+};
+
+const initialLanguage = getInitialLanguage();
+
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: initialLanguage,
     fallbackLng: 'en',
     supportedLngs: ['en', 'pt', 'es'],
     nonExplicitSupportedLngs: true,
@@ -1124,5 +1153,16 @@ i18n
       escapeValue: false
     }
   });
+
+i18n.on('languageChanged', (lng) => {
+  try {
+    sessionStorage.setItem('bb_lang', lng);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lng;
+    }
+  } catch {
+    // ignore
+  }
+});
 
 export default i18n;
