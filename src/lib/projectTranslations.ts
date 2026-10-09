@@ -211,19 +211,49 @@ export function getTranslatedProject<T extends ProjectLike>(project: T, currentL
   const lang = (currentLang || 'en').slice(0, 2) as 'en' | 'pt' | 'es';
   const targetLang = ['en', 'pt', 'es'].includes(lang) ? lang : 'en';
 
-  // Find known project match
-  const match = KNOWN_PROJECTS.find(entry => entry.matcher(project));
-
   let translatedName = project.name || project.title || '';
   let translatedDesc = project.description || '';
   let translatedLongDesc = project.long_description;
 
-  if (match) {
-    const tData = match.translations[targetLang];
+  // 1. First check if project has dynamic translations from the Admin panel
+  let translationsObj: any = (project as any).translations_json || (project as any).translations;
+  if (typeof translationsObj === 'string') {
+    try {
+      translationsObj = JSON.parse(translationsObj);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  let foundDynamic = false;
+  if (translationsObj && typeof translationsObj === 'object') {
+    const tData = translationsObj[targetLang];
     if (tData) {
-      if (tData.name) translatedName = tData.name;
-      if (tData.description) translatedDesc = tData.description;
-      if (tData.long_description) translatedLongDesc = tData.long_description;
+      if (tData.name || tData.title) {
+        translatedName = tData.name || tData.title;
+        foundDynamic = true;
+      }
+      if (tData.description) {
+        translatedDesc = tData.description;
+        foundDynamic = true;
+      }
+      if (tData.long_description) {
+        translatedLongDesc = tData.long_description;
+        foundDynamic = true;
+      }
+    }
+  }
+
+  // 2. If no dynamic translation found, check known projects registry
+  if (!foundDynamic) {
+    const match = KNOWN_PROJECTS.find(entry => entry.matcher(project));
+    if (match) {
+      const tData = match.translations[targetLang];
+      if (tData) {
+        if (tData.name) translatedName = tData.name;
+        if (tData.description) translatedDesc = tData.description;
+        if (tData.long_description) translatedLongDesc = tData.long_description;
+      }
     }
   }
 
@@ -375,19 +405,56 @@ export function getTranslatedInitiative<T extends InitiativeLike>(initiative: T,
   const lang = (currentLang || 'en').slice(0, 2) as 'en' | 'pt' | 'es';
   const targetLang = ['en', 'pt', 'es'].includes(lang) ? lang : 'en';
 
-  const match = KNOWN_INITIATIVES.find(entry => entry.matcher(initiative));
+  let translatedTitle = initiative.title || '';
+  let translatedDesc = initiative.description || '';
+  let translatedImpact = initiative.impact_description || '';
 
-  if (match) {
-    const tData = match.translations[targetLang];
-    if (tData) {
-      return {
-        ...initiative,
-        title: tData.title,
-        description: tData.description,
-        impact_description: tData.impact_description
-      };
+  // 1. First check dynamic translations from Admin panel
+  let translationsObj: any = (initiative as any).translations_json || (initiative as any).translations;
+  if (typeof translationsObj === 'string') {
+    try {
+      translationsObj = JSON.parse(translationsObj);
+    } catch (e) {
+      // ignore
     }
   }
 
-  return initiative;
+  let foundDynamic = false;
+  if (translationsObj && typeof translationsObj === 'object') {
+    const tData = translationsObj[targetLang];
+    if (tData) {
+      if (tData.title) {
+        translatedTitle = tData.title;
+        foundDynamic = true;
+      }
+      if (tData.description) {
+        translatedDesc = tData.description;
+        foundDynamic = true;
+      }
+      if (tData.impact_description) {
+        translatedImpact = tData.impact_description;
+        foundDynamic = true;
+      }
+    }
+  }
+
+  // 2. If no dynamic translation found, check known initiatives registry
+  if (!foundDynamic) {
+    const match = KNOWN_INITIATIVES.find(entry => entry.matcher(initiative));
+    if (match) {
+      const tData = match.translations[targetLang];
+      if (tData) {
+        if (tData.title) translatedTitle = tData.title;
+        if (tData.description) translatedDesc = tData.description;
+        if (tData.impact_description) translatedImpact = tData.impact_description;
+      }
+    }
+  }
+
+  return {
+    ...initiative,
+    title: translatedTitle,
+    description: translatedDesc,
+    impact_description: translatedImpact
+  };
 }

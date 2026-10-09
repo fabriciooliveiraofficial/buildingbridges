@@ -381,6 +381,7 @@ async function initializeDatabase() {
         \`category\` VARCHAR(100) NULL,
         \`long_description\` TEXT NULL,
         \`budget_json\` JSON NULL,
+        \`translations_json\` JSON NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         INDEX idx_status (\`status\`)
@@ -401,6 +402,7 @@ async function initializeDatabase() {
         \`goal_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         \`raised_amount\` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         \`status\` VARCHAR(50) NOT NULL DEFAULT 'active',
+        \`translations_json\` JSON NULL,
         \`created_by_user\` VARCHAR(255) NOT NULL,
         \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
@@ -408,6 +410,18 @@ async function initializeDatabase() {
         FOREIGN KEY (\`project_id\`) REFERENCES \`projects\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Self-healing migration for existing databases: ensure translations_json column exists
+    try {
+      await pool.query('ALTER TABLE `projects` ADD COLUMN `translations_json` JSON NULL');
+    } catch (e) {
+      // Column already exists
+    }
+    try {
+      await pool.query('ALTER TABLE `initiatives` ADD COLUMN `translations_json` JSON NULL');
+    } catch (e) {
+      // Column already exists
+    }
 
     // Create the 'users' table if it does not exist
     await pool.query(`
@@ -825,8 +839,8 @@ app.get('/api/projects', async (req, res) => {
     const [countRows] = await pool.query('SELECT COUNT(*) as total FROM `projects`');
     const total = countRows[0].total;
 
-    // Get paginated data (excluding heavy LONGTEXT like body if it existed, but we only have description)
-    const [rows] = await pool.query('SELECT `id`, `name`, `description`, `goal_amount`, `raised_amount`, `image_url`, `status`, `created_at` FROM `projects` ORDER BY `created_at` DESC LIMIT ? OFFSET ?', [limit, offset]);
+    // Get paginated data (including category, long_description, budget_json, translations_json)
+    const [rows] = await pool.query('SELECT `id`, `name`, `description`, `goal_amount`, `raised_amount`, `image_url`, `status`, `category`, `long_description`, `budget_json`, `translations_json`, `created_at` FROM `projects` ORDER BY `created_at` DESC LIMIT ? OFFSET ?', [limit, offset]);
     
     // Parse JSON columns properly
     const projects = rows.map(project => {
@@ -836,6 +850,15 @@ app.get('/api/projects', async (req, res) => {
             project.budget_json = JSON.parse(project.budget_json);
           } catch (e) {
             console.error('Failed to parse budget_json for project', project.id);
+          }
+        }
+      }
+      if (project.translations_json) {
+        if (typeof project.translations_json === 'string') {
+          try {
+            project.translations_json = JSON.parse(project.translations_json);
+          } catch (e) {
+            console.error('Failed to parse translations_json for project', project.id);
           }
         }
       }
@@ -874,6 +897,13 @@ app.get('/api/projects/:id', async (req, res) => {
         // Fallback
       }
     }
+    if (project.translations_json && typeof project.translations_json === 'string') {
+      try {
+        project.translations_json = JSON.parse(project.translations_json);
+      } catch (e) {
+        // Fallback
+      }
+    }
 
     res.json(project);
   } catch (err) {
@@ -885,7 +915,7 @@ app.get('/api/projects/:id', async (req, res) => {
 // POST /api/projects - Insert a new project (Admin only conceptually, secured locally)
 app.post('/api/projects', async (req, res) => {
   try {
-    const { name, description, goal_amount, image_url, status, category, long_description, budget_json } = req.body;
+    const { name, description, goal_amount, image_url, status, category, long_description, budget_json, translations_json } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Name is a required field.' });
@@ -906,7 +936,8 @@ app.post('/api/projects', async (req, res) => {
       status: status || 'active',
       category: category || null,
       long_description: long_description || null,
-      budget_json: budget_json ? JSON.stringify(budget_json) : null
+      budget_json: budget_json ? (typeof budget_json === 'string' ? budget_json : JSON.stringify(budget_json)) : null,
+      translations_json: translations_json ? (typeof translations_json === 'string' ? translations_json : JSON.stringify(translations_json)) : null
     };
 
     await pool.query(
@@ -915,7 +946,7 @@ app.post('/api/projects', async (req, res) => {
     );
 
     console.log(`New project created successfully: ${id}`);
-    res.status(201).json({ success: true, project: { ...projectData, budget_json } });
+    res.status(201).json({ success: true, project: { ...projectData, budget_json, translations_json } });
   } catch (err) {
     console.error('API Error POST /api/projects:', err);
     res.status(500).json({ error: 'Database error creating project' });
@@ -925,7 +956,7 @@ app.post('/api/projects', async (req, res) => {
 // PUT /api/projects/:id - Update an existing project (Admin only)
 app.put('/api/projects/:id', async (req, res) => {
   try {
-    const { name, description, goal_amount, image_url, status, category, long_description, budget_json } = req.body;
+    const { name, description, goal_amount, image_url, status, category, long_description, budget_json, translations_json } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Name is a required field.' });
@@ -938,7 +969,8 @@ app.put('/api/projects/:id', async (req, res) => {
       status: status || 'active',
       category: category || null,
       long_description: long_description || null,
-      budget_json: budget_json ? JSON.stringify(budget_json) : null
+      budget_json: budget_json ? (typeof budget_json === 'string' ? budget_json : JSON.stringify(budget_json)) : null,
+      translations_json: translations_json ? (typeof translations_json === 'string' ? translations_json : JSON.stringify(translations_json)) : null
     };
     // The goal is no longer edited from the admin form; only overwrite it when explicitly sent.
     if (goal_amount !== undefined && goal_amount !== null && goal_amount !== '') {
@@ -951,7 +983,7 @@ app.put('/api/projects/:id', async (req, res) => {
     );
 
     console.log(`Project updated successfully: ${req.params.id}`);
-    res.json({ success: true, project: { id: req.params.id, ...projectData, budget_json } });
+    res.json({ success: true, project: { id: req.params.id, ...projectData, budget_json, translations_json } });
   } catch (err) {
     console.error('API Error PUT /api/projects/:id:', err);
     res.status(500).json({ error: 'Database error updating project' });
@@ -1023,8 +1055,15 @@ app.get('/api/initiatives', async (req, res) => {
     // Paginated results
     const [rows] = await pool.query(query, [...params, limit, offset]);
     
+    const parsedRows = rows.map(r => ({
+      ...r,
+      translations_json: typeof r.translations_json === 'string'
+        ? (() => { try { return JSON.parse(r.translations_json); } catch(e) { return null; } })()
+        : r.translations_json
+    }));
+
     res.json({
-      initiatives: rows,
+      initiatives: parsedRows,
       meta: {
         total,
         page,
@@ -1047,7 +1086,14 @@ app.get('/api/initiatives/:id', async (req, res) => {
       return res.status(404).json({ error: 'Initiative not found' });
     }
     
-    res.json(rows[0]);
+    const initiative = {
+      ...rows[0],
+      translations_json: typeof rows[0].translations_json === 'string'
+        ? (() => { try { return JSON.parse(rows[0].translations_json); } catch(e) { return null; } })()
+        : rows[0].translations_json
+    };
+
+    res.json(initiative);
   } catch (err) {
     console.error('API Error /api/initiatives/:id:', err);
     res.status(500).json({ error: 'Database error fetching initiative' });
@@ -1057,7 +1103,7 @@ app.get('/api/initiatives/:id', async (req, res) => {
 // POST /api/initiatives - Create a new solidarity initiative
 app.post('/api/initiatives', async (req, res) => {
   try {
-    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, created_by_user } = req.body;
+    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, created_by_user, translations_json } = req.body;
     
     if (!project_id || !title || !type || !suggested_price || !impact_description) {
       return res.status(400).json({ error: 'Missing required fields (project_id, title, type, suggested_price, impact_description).' });
@@ -1079,13 +1125,14 @@ app.post('/api/initiatives', async (req, res) => {
       goal_amount: parseFloat(goal_amount || 0),
       raised_amount: 0.00,
       status: 'active',
-      created_by_user: created_by_user || 'user_submission'
+      created_by_user: created_by_user || 'user_submission',
+      translations_json: translations_json ? (typeof translations_json === 'string' ? translations_json : JSON.stringify(translations_json)) : null
     };
 
     await pool.query('INSERT INTO `initiatives` SET ?', initiativeData);
     console.log(`New solidarity initiative created successfully: ${id}`);
     
-    res.status(201).json({ success: true, initiative: initiativeData });
+    res.status(201).json({ success: true, initiative: { ...initiativeData, translations_json } });
   } catch (err) {
     console.error('API Error POST /api/initiatives:', err);
     res.status(500).json({ error: 'Database error creating initiative' });
@@ -1095,7 +1142,7 @@ app.post('/api/initiatives', async (req, res) => {
 // PUT /api/initiatives/:id - Update an existing solidarity initiative (Admin only)
 app.put('/api/initiatives/:id', async (req, res) => {
   try {
-    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, status } = req.body;
+    const { project_id, title, type, description, suggested_price, impact_description, image_url, goal_amount, status, translations_json } = req.body;
     
     if (!project_id || !title || !type || !suggested_price || !impact_description) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -1110,7 +1157,8 @@ app.put('/api/initiatives/:id', async (req, res) => {
       impact_description,
       image_url: image_url || null,
       goal_amount: parseFloat(goal_amount || 0),
-      status: status || 'active'
+      status: status || 'active',
+      translations_json: translations_json ? (typeof translations_json === 'string' ? translations_json : JSON.stringify(translations_json)) : null
     };
 
     await pool.query(
@@ -1119,7 +1167,7 @@ app.put('/api/initiatives/:id', async (req, res) => {
     );
 
     console.log(`Initiative updated successfully: ${req.params.id}`);
-    res.json({ success: true, initiative: { id: req.params.id, ...initiativeData } });
+    res.json({ success: true, initiative: { id: req.params.id, ...initiativeData, translations_json } });
   } catch (err) {
     console.error('API Error PUT /api/initiatives/:id:', err);
     res.status(500).json({ error: 'Database error updating initiative' });

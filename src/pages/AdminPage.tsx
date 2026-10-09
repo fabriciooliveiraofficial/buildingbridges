@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { parseImages } from '../lib/imageUtils';
 import { AccountSecurityPanel } from '../components/AccountSecurityPanel';
 import { SEO } from '../components/SEO';
+import { getTranslatedProject, getTranslatedInitiative } from '../lib/projectTranslations';
 
 export const AdminPage: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +29,28 @@ export const AdminPage: React.FC = () => {
   // UI state for showing list vs form
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Multilingual Form state (3 languages: pt, en, es)
+  const [formLang, setFormLang] = useState<'pt' | 'en' | 'es'>('pt');
+  const [projectTranslations, setProjectTranslations] = useState<{
+    pt: { name: string; description: string; long_description: string };
+    en: { name: string; description: string; long_description: string };
+    es: { name: string; description: string; long_description: string };
+  }>({
+    pt: { name: '', description: '', long_description: '' },
+    en: { name: '', description: '', long_description: '' },
+    es: { name: '', description: '', long_description: '' },
+  });
+
+  const [initiativeTranslations, setInitiativeTranslations] = useState<{
+    pt: { title: string; description: string; impact_description: string };
+    en: { title: string; description: string; impact_description: string };
+    es: { title: string; description: string; impact_description: string };
+  }>({
+    pt: { title: '', description: '', impact_description: '' },
+    en: { title: '', description: '', impact_description: '' },
+    es: { title: '', description: '', impact_description: '' },
+  });
 
   // Lists state
   const [missionsList, setMissionsList] = useState<any[]>([]);
@@ -306,6 +329,29 @@ export const AdminPage: React.FC = () => {
     setFormImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  // Helper to copy Portuguese values to active language tab
+  const handleCopyFromPt = () => {
+    if (activeConsole === 'mission') {
+      setProjectTranslations(prev => ({
+        ...prev,
+        [formLang]: {
+          name: prev.pt.name,
+          description: prev.pt.description,
+          long_description: prev.pt.long_description
+        }
+      }));
+    } else {
+      setInitiativeTranslations(prev => ({
+        ...prev,
+        [formLang]: {
+          title: prev.pt.title,
+          description: prev.pt.description,
+          impact_description: prev.pt.impact_description
+        }
+      }));
+    }
+  };
+
   // Switch to creation mode
   const handleCreateNew = () => {
     setEditingId(null);
@@ -314,6 +360,19 @@ export const AdminPage: React.FC = () => {
     setFormImages([]);
     setImageUrlInput('');
     setMessage({ type: '', text: '' });
+    setFormLang('pt');
+
+    setProjectTranslations({
+      pt: { name: '', description: '', long_description: '' },
+      en: { name: '', description: '', long_description: '' },
+      es: { name: '', description: '', long_description: '' }
+    });
+
+    setInitiativeTranslations({
+      pt: { title: '', description: '', impact_description: '' },
+      en: { title: '', description: '', impact_description: '' },
+      es: { title: '', description: '', impact_description: '' }
+    });
 
     if (activeConsole === 'mission') {
       setFormData({
@@ -351,16 +410,43 @@ export const AdminPage: React.FC = () => {
     setFormImages(parsed);
     setImageUrlInput('');
     setMessage({ type: '', text: '' });
+    setFormLang('pt');
 
     if (activeConsole === 'mission') {
+      let tJson: any = item.translations_json;
+      if (typeof tJson === 'string') {
+        try { tJson = JSON.parse(tJson); } catch (e) { tJson = null; }
+      }
+
+      const enKnown = !tJson?.en?.name ? getTranslatedProject(item, 'en') : null;
+      const esKnown = !tJson?.es?.name ? getTranslatedProject(item, 'es') : null;
+
+      const ptName = tJson?.pt?.name || item.name || '';
+      const ptDesc = tJson?.pt?.description || item.description || '';
+      const ptLong = tJson?.pt?.long_description || item.long_description || '';
+
+      const enName = tJson?.en?.name || (enKnown && enKnown.name !== item.name ? enKnown.name : '') || '';
+      const enDesc = tJson?.en?.description || (enKnown && enKnown.description !== item.description ? enKnown.description : '') || '';
+      const enLong = tJson?.en?.long_description || (enKnown && enKnown.long_description !== item.long_description ? enKnown.long_description : '') || '';
+
+      const esName = tJson?.es?.name || (esKnown && esKnown.name !== item.name ? esKnown.name : '') || '';
+      const esDesc = tJson?.es?.description || (esKnown && esKnown.description !== item.description ? esKnown.description : '') || '';
+      const esLong = tJson?.es?.long_description || (esKnown && esKnown.long_description !== item.long_description ? esKnown.long_description : '') || '';
+
+      setProjectTranslations({
+        pt: { name: ptName, description: ptDesc, long_description: ptLong },
+        en: { name: enName, description: enDesc, long_description: enLong },
+        es: { name: esName, description: esDesc, long_description: esLong }
+      });
+
       setFormData({
-        name: item.name,
-        description: item.description || '',
-        goal_amount: item.goal_amount.toString(),
+        name: ptName,
+        description: ptDesc,
+        goal_amount: item.goal_amount ? item.goal_amount.toString() : '',
         image_url: item.image_url || '',
         category: item.category || 'BRAZIL RELIEF',
         status: item.status || 'active',
-        long_description: item.long_description || '',
+        long_description: ptLong,
       });
       
       if (item.budget_json) {
@@ -372,13 +458,39 @@ export const AdminPage: React.FC = () => {
         setBudgetRows([{ label: '', percent: '' }]);
       }
     } else {
+      let tJson: any = item.translations_json;
+      if (typeof tJson === 'string') {
+        try { tJson = JSON.parse(tJson); } catch (e) { tJson = null; }
+      }
+
+      const enKnown = !tJson?.en?.title ? getTranslatedInitiative(item, 'en') : null;
+      const esKnown = !tJson?.es?.title ? getTranslatedInitiative(item, 'es') : null;
+
+      const ptTitle = tJson?.pt?.title || item.title || '';
+      const ptDesc = tJson?.pt?.description || item.description || '';
+      const ptImpact = tJson?.pt?.impact_description || item.impact_description || '';
+
+      const enTitle = tJson?.en?.title || (enKnown && enKnown.title !== item.title ? enKnown.title : '') || '';
+      const enDesc = tJson?.en?.description || (enKnown && enKnown.description !== item.description ? enKnown.description : '') || '';
+      const enImpact = tJson?.en?.impact_description || (enKnown && enKnown.impact_description !== item.impact_description ? enKnown.impact_description : '') || '';
+
+      const esTitle = tJson?.es?.title || (esKnown && esKnown.title !== item.title ? esKnown.title : '') || '';
+      const esDesc = tJson?.es?.description || (esKnown && esKnown.description !== item.description ? esKnown.description : '') || '';
+      const esImpact = tJson?.es?.impact_description || (esKnown && esKnown.impact_description !== item.impact_description ? esKnown.impact_description : '') || '';
+
+      setInitiativeTranslations({
+        pt: { title: ptTitle, description: ptDesc, impact_description: ptImpact },
+        en: { title: enTitle, description: enDesc, impact_description: enImpact },
+        es: { title: esTitle, description: esDesc, impact_description: esImpact }
+      });
+
       setInitiativeData({
         project_id: item.project_id,
-        title: item.title,
+        title: ptTitle,
         type: item.type,
-        description: item.description || '',
-        suggested_price: item.suggested_price.toString(),
-        impact_description: item.impact_description,
+        description: ptDesc,
+        suggested_price: item.suggested_price ? item.suggested_price.toString() : '',
+        impact_description: ptImpact,
         image_url: item.image_url || '',
         goal_amount: item.goal_amount ? item.goal_amount.toString() : '',
         status: item.status || 'active'
@@ -448,22 +560,45 @@ export const AdminPage: React.FC = () => {
 
       if (activeConsole === 'mission') {
         // ================== PROCESS MISSION (PROJECT) ==================
-        if (!formData.name) {
-          throw new Error('O nome do projeto é obrigatório.');
+        const primaryName = projectTranslations.pt.name.trim() || projectTranslations.en.name.trim() || projectTranslations.es.name.trim();
+        const primaryDesc = projectTranslations.pt.description.trim() || projectTranslations.en.description.trim() || projectTranslations.es.description.trim();
+        const primaryLong = projectTranslations.pt.long_description.trim() || projectTranslations.en.long_description.trim() || projectTranslations.es.long_description.trim();
+
+        if (!primaryName) {
+          throw new Error('O nome do projeto é obrigatório (preencha ao menos em um dos idiomas).');
         }
 
         const budgetJson = budgetRows
           .filter(row => row.label && row.percent)
           .map(row => ({ label: row.label, percent: parseInt(row.percent as string) }));
 
+        const translationsJson = {
+          pt: {
+            name: projectTranslations.pt.name.trim() || primaryName,
+            description: projectTranslations.pt.description.trim() || primaryDesc,
+            long_description: projectTranslations.pt.long_description.trim() || primaryLong
+          },
+          en: {
+            name: projectTranslations.en.name.trim() || primaryName,
+            description: projectTranslations.en.description.trim() || primaryDesc,
+            long_description: projectTranslations.en.long_description.trim() || primaryLong
+          },
+          es: {
+            name: projectTranslations.es.name.trim() || primaryName,
+            description: projectTranslations.es.description.trim() || primaryDesc,
+            long_description: projectTranslations.es.long_description.trim() || primaryLong
+          }
+        };
+
         const projectData = {
-          name: formData.name,
-          description: formData.description,
+          name: primaryName,
+          description: primaryDesc,
           image_url: savedImageUrl,
           status: formData.status,
           category: formData.category,
-          long_description: formData.long_description,
-          budget_json: budgetJson.length > 0 ? budgetJson : null
+          long_description: primaryLong,
+          budget_json: budgetJson.length > 0 ? budgetJson : null,
+          translations_json: translationsJson
         };
 
         let res;
@@ -479,7 +614,7 @@ export const AdminPage: React.FC = () => {
 
         setMessage({ 
           type: 'success', 
-          text: `Projeto Humanitário ${editingId ? 'atualizado' : 'publicado'} com sucesso!` 
+          text: `Projeto Humanitário ${editingId ? 'atualizado' : 'publicado'} com sucesso nos 3 idiomas!` 
         });
         
         // Return to list and reload
@@ -488,21 +623,44 @@ export const AdminPage: React.FC = () => {
         fetchMissions();
       } else {
         // ================== PROCESS INITIATIVE (PRODUCT/EXPERIENCE) ==================
-        if (!initiativeData.title || !initiativeData.suggested_price || !initiativeData.impact_description) {
+        const primaryTitle = initiativeTranslations.pt.title.trim() || initiativeTranslations.en.title.trim() || initiativeTranslations.es.title.trim();
+        const primaryDesc = initiativeTranslations.pt.description.trim() || initiativeTranslations.en.description.trim() || initiativeTranslations.es.description.trim();
+        const primaryImpact = initiativeTranslations.pt.impact_description.trim() || initiativeTranslations.en.impact_description.trim() || initiativeTranslations.es.impact_description.trim();
+
+        if (!primaryTitle || !initiativeData.suggested_price || !primaryImpact) {
           throw new Error('Título, Contribuição Sugerida e Descrição do Impacto são obrigatórios.');
         }
 
+        const translationsJson = {
+          pt: {
+            title: initiativeTranslations.pt.title.trim() || primaryTitle,
+            description: initiativeTranslations.pt.description.trim() || primaryDesc,
+            impact_description: initiativeTranslations.pt.impact_description.trim() || primaryImpact
+          },
+          en: {
+            title: initiativeTranslations.en.title.trim() || primaryTitle,
+            description: initiativeTranslations.en.description.trim() || primaryDesc,
+            impact_description: initiativeTranslations.en.impact_description.trim() || primaryImpact
+          },
+          es: {
+            title: initiativeTranslations.es.title.trim() || primaryTitle,
+            description: initiativeTranslations.es.description.trim() || primaryDesc,
+            impact_description: initiativeTranslations.es.impact_description.trim() || primaryImpact
+          }
+        };
+
         const finalInitiative = {
           project_id: initiativeData.project_id,
-          title: initiativeData.title,
+          title: primaryTitle,
           type: initiativeData.type,
-          description: initiativeData.description || '',
+          description: primaryDesc,
           suggested_price: parseFloat(initiativeData.suggested_price),
-          impact_description: initiativeData.impact_description,
+          impact_description: primaryImpact,
           image_url: savedImageUrl,
           goal_amount: parseFloat(initiativeData.goal_amount || '0'),
           status: initiativeData.status,
-          created_by_user: 'admin_console'
+          created_by_user: 'admin_console',
+          translations_json: translationsJson
         };
 
         let res;
@@ -518,7 +676,7 @@ export const AdminPage: React.FC = () => {
 
         setMessage({ 
           type: 'success', 
-          text: `Iniciativa Solidária ${editingId ? 'atualizada' : 'registrada'} com sucesso!` 
+          text: `Iniciativa Solidária ${editingId ? 'atualizada' : 'registrada'} com sucesso nos 3 idiomas!` 
         });
         
         // Return to list and reload
@@ -905,18 +1063,107 @@ export const AdminPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Multilingual Language Selector Header */}
+            <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 sm:p-5 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-xl">translate</span>
+                    <h4 className="text-sm font-black text-primary uppercase tracking-wider">Tradução em 3 Idiomas</h4>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                    Preencha os textos em Português, Inglês e Espanhol para que o widget de idiomas na plataforma traduza seu conteúdo em tempo real.
+                  </p>
+                </div>
+
+                {formLang !== 'pt' && (
+                  <button
+                    type="button"
+                    onClick={handleCopyFromPt}
+                    className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    title="Copiar textos em Português para este idioma como ponto de partida"
+                  >
+                    <span className="material-symbols-outlined text-sm text-accent">content_copy</span>
+                    Copiar do Português
+                  </button>
+                )}
+              </div>
+
+              {/* Language Tabs */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'pt' as const, label: 'Português', flag: '🇧🇷', subtitle: 'Padrão / Principal' },
+                  { id: 'en' as const, label: 'English', flag: '🇺🇸', subtitle: 'Internacional / EUA' },
+                  { id: 'es' as const, label: 'Español', flag: '🇲🇽', subtitle: 'Latinoamérica' },
+                ].map((lang) => {
+                  const isActive = formLang === lang.id;
+                  const isFilled = activeConsole === 'mission'
+                    ? !!projectTranslations[lang.id].name.trim()
+                    : !!initiativeTranslations[lang.id].title.trim();
+
+                  return (
+                    <button
+                      key={lang.id}
+                      type="button"
+                      onClick={() => setFormLang(lang.id)}
+                      className={`flex flex-col sm:flex-row items-center sm:items-start justify-between p-3 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                        isActive
+                          ? 'bg-primary text-white border-primary shadow-md'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl sm:text-2xl leading-none">{lang.flag}</span>
+                        <div>
+                          <p className={`text-xs font-black ${isActive ? 'text-white' : 'text-slate-800'}`}>{lang.label}</p>
+                          <p className={`text-[10px] hidden sm:block font-bold ${isActive ? 'text-white/70' : 'text-slate-400'}`}>{lang.subtitle}</p>
+                        </div>
+                      </div>
+                      <span className={`mt-1 sm:mt-0 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        isActive
+                          ? isFilled ? 'bg-white/20 text-white' : 'bg-white/10 text-white/60'
+                          : isFilled ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {isFilled ? 'Pronto' : 'Vazio'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {activeConsole === 'mission' ? (
               // --- MISSION FORM FIELDS ---
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Nome do Projeto</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                        Nome do Projeto ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {formLang === 'pt' ? 'Obrigatório' : 'Opcional (fallback: PT)'}
+                      </span>
+                    </div>
                     <input 
-                      required
+                      required={formLang === 'pt'}
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all text-slate-800"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      placeholder="Ex: Auxílio Enchentes no Sul"
+                      value={projectTranslations[formLang].name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectTranslations(prev => ({
+                          ...prev,
+                          [formLang]: { ...prev[formLang], name: val }
+                        }));
+                        if (formLang === 'pt') {
+                          setFormData(prev => ({ ...prev, name: val }));
+                        }
+                      }}
+                      placeholder={
+                        formLang === 'pt' ? 'Ex: Auxílio Enchentes no Sul' :
+                        formLang === 'en' ? 'Ex: Southern Floods Relief' :
+                        'Ex: Auxilio Inundaciones del Sur'
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -947,14 +1194,34 @@ export const AdminPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Breve Descrição (Sumário)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                      Breve Descrição / Sumário ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                    </label>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {formLang === 'pt' ? 'Obrigatório' : 'Opcional (fallback: PT)'}
+                    </span>
+                  </div>
                   <textarea 
-                    required
+                    required={formLang === 'pt'}
                     rows={2}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all resize-none text-slate-800"
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Descrição rápida de até 2 parágrafos..."
+                    value={projectTranslations[formLang].description}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProjectTranslations(prev => ({
+                        ...prev,
+                        [formLang]: { ...prev[formLang], description: val }
+                      }));
+                      if (formLang === 'pt') {
+                        setFormData(prev => ({ ...prev, description: val }));
+                      }
+                    }}
+                    placeholder={
+                      formLang === 'pt' ? 'Descrição rápida de até 2 parágrafos em português...' :
+                      formLang === 'en' ? 'Short summary in English (1-2 paragraphs)...' :
+                      'Breve descripción en español (1-2 párrafos)...'
+                    }
                   />
                 </div>
 
@@ -1029,13 +1296,31 @@ export const AdminPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">História Completa (Página de Impacto)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                      História Completa / Página de Impacto ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                    </label>
+                    <span className="text-[10px] font-bold text-slate-400">Opcional</span>
+                  </div>
                   <textarea 
                     rows={5}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all resize-none text-slate-800"
-                    value={formData.long_description}
-                    onChange={(e) => setFormData({...formData, long_description: e.target.value})}
-                    placeholder="Escreva a história completa de impacto social..."
+                    value={projectTranslations[formLang].long_description}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProjectTranslations(prev => ({
+                        ...prev,
+                        [formLang]: { ...prev[formLang], long_description: val }
+                      }));
+                      if (formLang === 'pt') {
+                        setFormData(prev => ({ ...prev, long_description: val }));
+                      }
+                    }}
+                    placeholder={
+                      formLang === 'pt' ? 'Escreva a história completa de impacto social em português...' :
+                      formLang === 'en' ? 'Write the full social impact story in English...' :
+                      'Escribe la historia completa de impacto social en español...'
+                    }
                   />
                 </div>
 
@@ -1090,13 +1375,33 @@ export const AdminPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Title */}
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Título da Iniciativa</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                        Título da Iniciativa ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {formLang === 'pt' ? 'Obrigatório' : 'Opcional (fallback: PT)'}
+                      </span>
+                    </div>
                     <input 
-                      required
+                      required={formLang === 'pt'}
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all text-slate-800"
-                      value={initiativeData.title}
-                      onChange={(e) => setInitiativeData({...initiativeData, title: e.target.value})}
-                      placeholder="Ex: Camiseta Oficial Building Bridges"
+                      value={initiativeTranslations[formLang].title}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setInitiativeTranslations(prev => ({
+                          ...prev,
+                          [formLang]: { ...prev[formLang], title: val }
+                        }));
+                        if (formLang === 'pt') {
+                          setInitiativeData(prev => ({ ...prev, title: val }));
+                        }
+                      }}
+                      placeholder={
+                        formLang === 'pt' ? 'Ex: Camiseta Oficial Building Bridges' :
+                        formLang === 'en' ? 'Ex: Official Building Bridges T-Shirt' :
+                        'Ex: Camiseta Oficial Building Bridges'
+                      }
                     />
                   </div>
 
@@ -1147,14 +1452,34 @@ export const AdminPage: React.FC = () => {
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Descrição Detalhada</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                      Descrição Detalhada ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                    </label>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {formLang === 'pt' ? 'Obrigatório' : 'Opcional (fallback: PT)'}
+                    </span>
+                  </div>
                   <textarea 
-                    required
+                    required={formLang === 'pt'}
                     rows={3}
                     className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all resize-none text-slate-800"
-                    value={initiativeData.description}
-                    onChange={(e) => setInitiativeData({...initiativeData, description: e.target.value})}
-                    placeholder="Detalhe o produto ou como funcionará a atividade solidária..."
+                    value={initiativeTranslations[formLang].description}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInitiativeTranslations(prev => ({
+                        ...prev,
+                        [formLang]: { ...prev[formLang], description: val }
+                      }));
+                      if (formLang === 'pt') {
+                        setInitiativeData(prev => ({ ...prev, description: val }));
+                      }
+                    }}
+                    placeholder={
+                      formLang === 'pt' ? 'Detalhe o produto ou como funcionará a atividade solidária em português...' :
+                      formLang === 'en' ? 'Detail the product or community activity in English...' :
+                      'Detalle el producto o actividad solidaria en español...'
+                    }
                   />
                 </div>
 
@@ -1194,13 +1519,33 @@ export const AdminPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Impact Description */}
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Framing de Impacto (Mensagem Solidária)</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">
+                        Framing de Impacto ({formLang === 'pt' ? 'Português 🇧🇷' : formLang === 'en' ? 'Inglês 🇺🇸' : 'Espanhol 🇲🇽'})
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {formLang === 'pt' ? 'Obrigatório' : 'Opcional (fallback: PT)'}
+                      </span>
+                    </div>
                     <input 
-                      required
+                      required={formLang === 'pt'}
                       className="w-full bg-slate-50 border-2 border-transparent focus:border-accent rounded-xl py-4 px-6 outline-none font-bold transition-all text-slate-800"
-                      value={initiativeData.impact_description}
-                      onChange={(e) => setInitiativeData({...initiativeData, impact_description: e.target.value})}
-                      placeholder="Ex: Garante 5 dias de refeições e água limpa"
+                      value={initiativeTranslations[formLang].impact_description}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setInitiativeTranslations(prev => ({
+                          ...prev,
+                          [formLang]: { ...prev[formLang], impact_description: val }
+                        }));
+                        if (formLang === 'pt') {
+                          setInitiativeData(prev => ({ ...prev, impact_description: val }));
+                        }
+                      }}
+                      placeholder={
+                        formLang === 'pt' ? 'Ex: Garante 5 dias de refeições e água limpa' :
+                        formLang === 'en' ? 'Ex: Provides 5 days of meals and clean water' :
+                        'Ex: Garantiza 5 días de alimentos y agua potable'
+                      }
                     />
                   </div>
 
@@ -1328,50 +1673,66 @@ export const AdminPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 text-slate-700 text-xs font-semibold">
-                    {missionsList.map((m) => (
-                      <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
-                            <img src={parseImages(m.image_url)[0] || 'https://picsum.photos/seed/default-mission/1200/800'} alt={m.name} className="w-full h-full object-cover" />
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 space-y-1">
-                          <p className="font-black text-slate-900 text-sm">{m.name}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{m.category || 'Geral'}</p>
-                        </td>
-                        <td className="py-4 px-4 font-bold text-slate-800">
-                          ${parseFloat(m.goal_amount).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4 font-bold text-slate-800">
-                          ${parseFloat(m.raised_amount || 0).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`inline-block text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${
-                            m.status === 'active' ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {m.status === 'active' ? 'Ativo' : 'Concluído'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex justify-center gap-2">
-                            <button 
-                              onClick={() => handleEditClick(m)}
-                              className="size-8 rounded-lg bg-slate-100 hover:bg-primary/5 text-slate-500 hover:text-primary transition-colors flex items-center justify-center"
-                              title="Editar"
-                            >
-                              <span className="material-symbols-outlined text-lg">edit</span>
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteClick(m.id, m.name)}
-                              className="size-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition-colors flex items-center justify-center"
-                              title="Excluir"
-                            >
-                              <span className="material-symbols-outlined text-lg">delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {missionsList.map((m) => {
+                      const mTrans = typeof m.translations_json === 'string' 
+                        ? (() => { try { return JSON.parse(m.translations_json); } catch(e) { return null; } })()
+                        : m.translations_json;
+                      const hasPt = !!(mTrans?.pt?.name || m.name);
+                      const hasEn = !!(mTrans?.en?.name || (getTranslatedProject(m, 'en').name !== m.name));
+                      const hasEs = !!(mTrans?.es?.name || (getTranslatedProject(m, 'es').name !== m.name));
+
+                      return (
+                        <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 px-4">
+                            <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                              <img src={parseImages(m.image_url)[0] || 'https://picsum.photos/seed/default-mission/1200/800'} alt={m.name} className="w-full h-full object-cover" />
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 space-y-1">
+                            <p className="font-black text-slate-900 text-sm">{m.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{m.category || 'Geral'}</p>
+                              <div className="flex items-center gap-1">
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasPt ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'}`}>PT</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasEn ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-400'}`}>EN</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasEs ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-400'}`}>ES</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-800">
+                            ${parseFloat(m.goal_amount).toLocaleString()}
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-800">
+                            ${parseFloat(m.raised_amount || 0).toLocaleString()}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`inline-block text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${
+                              m.status === 'active' ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {m.status === 'active' ? 'Ativo' : 'Concluído'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex justify-center gap-2">
+                              <button 
+                                onClick={() => handleEditClick(m)}
+                                className="size-8 rounded-lg bg-slate-100 hover:bg-primary/5 text-slate-500 hover:text-primary transition-colors flex items-center justify-center cursor-pointer"
+                                title="Editar"
+                              >
+                                <span className="material-symbols-outlined text-lg">edit</span>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClick(m.id, m.name)}
+                                className="size-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition-colors flex items-center justify-center cursor-pointer"
+                                title="Excluir"
+                              >
+                                <span className="material-symbols-outlined text-lg">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1397,14 +1758,29 @@ export const AdminPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 text-slate-700 text-xs font-semibold">
-                    {initiativeList.map((i) => (
-                      <tr key={i.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
-                            <img src={parseImages(i.image_url)[0] || 'https://picsum.photos/seed/default-initiative/800/600'} alt={i.title} className="w-full h-full object-cover" />
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 font-black text-slate-900 text-sm">{i.title}</td>
+                    {initiativeList.map((i) => {
+                      const iTrans = typeof i.translations_json === 'string'
+                        ? (() => { try { return JSON.parse(i.translations_json); } catch(e) { return null; } })()
+                        : i.translations_json;
+                      const hasPt = !!(iTrans?.pt?.title || i.title);
+                      const hasEn = !!(iTrans?.en?.title || (getTranslatedInitiative(i, 'en').title !== i.title));
+                      const hasEs = !!(iTrans?.es?.title || (getTranslatedInitiative(i, 'es').title !== i.title));
+
+                      return (
+                        <tr key={i.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 px-4">
+                            <div className="size-12 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                              <img src={parseImages(i.image_url)[0] || 'https://picsum.photos/seed/default-initiative/800/600'} alt={i.title} className="w-full h-full object-cover" />
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 space-y-1">
+                            <p className="font-black text-slate-900 text-sm">{i.title}</p>
+                            <div className="flex items-center gap-1">
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasPt ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'}`}>PT</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasEn ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-400'}`}>EN</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black ${hasEs ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-400'}`}>ES</span>
+                            </div>
+                          </td>
                         <td className="py-4 px-4">
                           <span className={`inline-block text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${
                             i.type === 'item' ? 'bg-indigo-50 text-indigo-600' : 'bg-teal-50 text-teal-600'
@@ -1444,7 +1820,8 @@ export const AdminPage: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>
