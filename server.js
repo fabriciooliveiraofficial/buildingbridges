@@ -978,7 +978,7 @@ app.get('/api/initiatives', async (req, res) => {
     const offset = (page - 1) * limit;
     
     let countQuery = 'SELECT COUNT(*) as total FROM `initiatives`';
-    let query = 'SELECT `id`, `project_id`, `name`, `description`, `goal_amount`, `raised_amount`, `image_url`, `status`, `created_at` FROM `initiatives`';
+    let query = 'SELECT * FROM `initiatives`';
     const params = [];
     
     if (projectId) {
