@@ -477,14 +477,18 @@ export const InitiativesPage: React.FC = () => {
                 {checkoutStep === 'tier' ? (
                   // --- STEP 1: VALUE TIER SELECTION ---
                   (() => {
-                    const modalTiers = getContributionValues(selectedInitiative.suggested_price, selectedCurrency);
+                    const activeInitiative = getTranslatedInitiative(selectedInitiative, i18n.language);
+                    const modalTiers = getContributionValues(activeInitiative.suggested_price, selectedCurrency);
                     return (
                       <div className="space-y-6">
                         <div>
                           <span className="text-[10px] font-black text-accent uppercase tracking-widest mb-1.5 block">
-                            Apoiar com {selectedInitiative.type === 'item' ? 'Símbolo' : 'Atividade'}
+                            Apoiar com {activeInitiative.type === 'item' ? 'Símbolo' : 'Atividade'}
                           </span>
-                          <h3 className="text-2xl font-black text-primary leading-tight">{selectedInitiative.title}</h3>
+                          <h3 className="text-2xl font-black text-primary leading-tight">{activeInitiative.title}</h3>
+                          {activeInitiative.impact_description && (
+                            <p className="text-xs text-accent font-bold mt-1">✨ {activeInitiative.impact_description}</p>
+                          )}
                         </div>
 
                         {/* Currency Selector Switch */}

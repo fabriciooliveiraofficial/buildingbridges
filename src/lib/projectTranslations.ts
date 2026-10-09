@@ -217,30 +217,44 @@ export function getTranslatedProject<T extends ProjectLike>(project: T, currentL
 
   // 1. First check if project has dynamic translations from the Admin panel
   let translationsObj: any = (project as any).translations_json || (project as any).translations;
-  if (typeof translationsObj === 'string') {
+  while (typeof translationsObj === 'string') {
     try {
       translationsObj = JSON.parse(translationsObj);
     } catch (e) {
-      // ignore
+      break;
     }
   }
 
   let foundDynamic = false;
   if (translationsObj && typeof translationsObj === 'object') {
     const tData = translationsObj[targetLang];
+    const fallbackData = translationsObj.pt || translationsObj.en || translationsObj.es;
+
     if (tData) {
-      if (tData.name || tData.title) {
-        translatedName = tData.name || tData.title;
+      if (tData.name && tData.name.trim()) {
+        translatedName = tData.name.trim();
         foundDynamic = true;
+      } else if (fallbackData?.name && fallbackData.name.trim()) {
+        translatedName = fallbackData.name.trim();
       }
-      if (tData.description) {
-        translatedDesc = tData.description;
+
+      if (tData.description && tData.description.trim()) {
+        translatedDesc = tData.description.trim();
         foundDynamic = true;
+      } else if (fallbackData?.description && fallbackData.description.trim()) {
+        translatedDesc = fallbackData.description.trim();
       }
-      if (tData.long_description) {
-        translatedLongDesc = tData.long_description;
+
+      if (tData.long_description && tData.long_description.trim()) {
+        translatedLongDesc = tData.long_description.trim();
         foundDynamic = true;
+      } else if (fallbackData?.long_description && fallbackData.long_description.trim()) {
+        translatedLongDesc = fallbackData.long_description.trim();
       }
+    } else if (fallbackData) {
+      if (fallbackData.name && fallbackData.name.trim()) translatedName = fallbackData.name.trim();
+      if (fallbackData.description && fallbackData.description.trim()) translatedDesc = fallbackData.description.trim();
+      if (fallbackData.long_description && fallbackData.long_description.trim()) translatedLongDesc = fallbackData.long_description.trim();
     }
   }
 
@@ -411,30 +425,44 @@ export function getTranslatedInitiative<T extends InitiativeLike>(initiative: T,
 
   // 1. First check dynamic translations from Admin panel
   let translationsObj: any = (initiative as any).translations_json || (initiative as any).translations;
-  if (typeof translationsObj === 'string') {
+  while (typeof translationsObj === 'string') {
     try {
       translationsObj = JSON.parse(translationsObj);
     } catch (e) {
-      // ignore
+      break;
     }
   }
 
   let foundDynamic = false;
   if (translationsObj && typeof translationsObj === 'object') {
     const tData = translationsObj[targetLang];
+    const fallbackData = translationsObj.pt || translationsObj.en || translationsObj.es;
+
     if (tData) {
-      if (tData.title) {
-        translatedTitle = tData.title;
+      if (tData.title && tData.title.trim()) {
+        translatedTitle = tData.title.trim();
         foundDynamic = true;
+      } else if (fallbackData?.title && fallbackData.title.trim()) {
+        translatedTitle = fallbackData.title.trim();
       }
-      if (tData.description) {
-        translatedDesc = tData.description;
+
+      if (tData.description && tData.description.trim()) {
+        translatedDesc = tData.description.trim();
         foundDynamic = true;
+      } else if (fallbackData?.description && fallbackData.description.trim()) {
+        translatedDesc = fallbackData.description.trim();
       }
-      if (tData.impact_description) {
-        translatedImpact = tData.impact_description;
+
+      if (tData.impact_description && tData.impact_description.trim()) {
+        translatedImpact = tData.impact_description.trim();
         foundDynamic = true;
+      } else if (fallbackData?.impact_description && fallbackData.impact_description.trim()) {
+        translatedImpact = fallbackData.impact_description.trim();
       }
+    } else if (fallbackData) {
+      if (fallbackData.title && fallbackData.title.trim()) translatedTitle = fallbackData.title.trim();
+      if (fallbackData.description && fallbackData.description.trim()) translatedDesc = fallbackData.description.trim();
+      if (fallbackData.impact_description && fallbackData.impact_description.trim()) translatedImpact = fallbackData.impact_description.trim();
     }
   }
 
@@ -454,6 +482,7 @@ export function getTranslatedInitiative<T extends InitiativeLike>(initiative: T,
   return {
     ...initiative,
     title: translatedTitle,
+    name: translatedTitle,
     description: translatedDesc,
     impact_description: translatedImpact
   };
