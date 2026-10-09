@@ -13,21 +13,16 @@ export const MockupsPreviewPage: React.FC = () => {
   const [adminZelleHolder, setAdminZelleHolder] = useState('Building Bridges Foundation Inc.');
   const [adminZelleEnabled, setAdminZelleEnabled] = useState(true);
 
-  const [adminVenmoHandle, setAdminVenmoHandle] = useState('@buildingbridges');
-  const [adminVenmoHolder, setAdminVenmoHolder] = useState('Building Bridges USA');
-  const [adminVenmoEnabled, setAdminVenmoEnabled] = useState(true);
-
   const [adminZelleQrUrl, setAdminZelleQrUrl] = useState('');
-  const [adminVenmoQrUrl, setAdminVenmoQrUrl] = useState('');
 
   // --- HOME STATE ---
-  const [homeMethod, setHomeMethod] = useState<'card' | 'venmo' | 'zelle'>('card');
+  const [homeMethod, setHomeMethod] = useState<'card' | 'zelle'>('card');
   const [homeAmount, setHomeAmount] = useState('50');
   const [homeCustomAmount, setHomeCustomAmount] = useState('');
   const [homeQrUrl, setHomeQrUrl] = useState('');
 
   // --- PRODUCT MODAL STATE ---
-  const [productMethod, setProductMethod] = useState<'card' | 'venmo' | 'zelle'>('card');
+  const [productMethod, setProductMethod] = useState<'card' | 'zelle'>('card');
   const [productQrUrl, setProductQrUrl] = useState('');
   const [showProductModal, setShowProductModal] = useState(true);
 
@@ -44,45 +39,25 @@ export const MockupsPreviewPage: React.FC = () => {
         .then(setAdminZelleQrUrl)
         .catch(console.error);
     }
-    if (adminVenmoHandle) {
-      const cleanVenmo = adminVenmoHandle.replace('@', '');
-      const venmoLink = `https://venmo.com/u/${cleanVenmo}`;
-      QRCode.toDataURL(venmoLink, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
-        .then(setAdminVenmoQrUrl)
-        .catch(console.error);
-    }
-  }, [adminZelleKey, adminVenmoHandle]);
+  }, [adminZelleKey]);
 
   // Generate Home QR code based on method & amount
   useEffect(() => {
-    const val = homeAmount || homeCustomAmount || '50';
     if (homeMethod === 'zelle') {
       QRCode.toDataURL(adminZelleKey, { width: 240, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
         .then(setHomeQrUrl)
         .catch(console.error);
-    } else if (homeMethod === 'venmo') {
-      const cleanVenmo = adminVenmoHandle.replace('@', '');
-      const venmoPayLink = `https://venmo.com/u/${cleanVenmo}?txn=pay&amount=${val}&note=Building+Bridges+Donation`;
-      QRCode.toDataURL(venmoPayLink, { width: 240, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
-        .then(setHomeQrUrl)
-        .catch(console.error);
     }
-  }, [homeMethod, homeAmount, homeCustomAmount, adminZelleKey, adminVenmoHandle]);
+  }, [homeMethod, homeAmount, homeCustomAmount, adminZelleKey]);
 
   // Generate Product Modal QR code based on method
   useEffect(() => {
-    if (productMethod === 'venmo') {
-      const cleanVenmo = adminVenmoHandle.replace('@', '');
-      const venmoProductLink = `https://venmo.com/u/${cleanVenmo}?txn=pay&amount=25&note=Camiseta+Oficial+Bridges`;
-      QRCode.toDataURL(venmoProductLink, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
-        .then(setProductQrUrl)
-        .catch(console.error);
-    } else if (productMethod === 'zelle') {
+    if (productMethod === 'zelle') {
       QRCode.toDataURL(adminZelleKey, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
         .then(setProductQrUrl)
         .catch(console.error);
     }
-  }, [productMethod, adminZelleKey, adminVenmoHandle]);
+  }, [productMethod, adminZelleKey]);
 
   return (
     <div className="min-h-screen bg-background-light py-8 px-4 sm:px-6 lg:px-8">
@@ -97,7 +72,7 @@ export const MockupsPreviewPage: React.FC = () => {
               Design System Oficial Building Bridges
             </div>
             <h1 className="text-2xl sm:text-3xl font-black font-heading">
-              Mockups Oficiais: Zelle & Venmo
+              Mockups Oficiais: Zelle
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl font-medium">
               Paleta e tipografia 100% integradas: Primary (<code className="text-accent font-bold">#0a3161</code>), Accent (<code className="text-accent font-bold">#FF8C00</code>), botões do sistema e segmented switches idênticos.
@@ -172,7 +147,7 @@ export const MockupsPreviewPage: React.FC = () => {
                 <span className="text-[10px] font-black text-accent uppercase tracking-widest block">Tela 1 / 3</span>
                 <h2 className="text-lg font-black text-primary font-heading">Card de Doação Rápida no Hero (Página Inicial)</h2>
               </div>
-              <span className="text-xs font-bold text-slate-500">Selecione CARTÃO, VENMO ou ZELLE no switch abaixo</span>
+              <span className="text-xs font-bold text-slate-500">Selecione CARTÃO ou ZELLE no switch abaixo</span>
             </div>
 
             {/* Simulated Hero Section */}
@@ -217,12 +192,12 @@ export const MockupsPreviewPage: React.FC = () => {
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">100% Seguro</span>
                       </div>
 
-                      {/* UNIFIED DESIGN SYSTEM SWITCH (CARTÃO | VENMO | ZELLE) */}
-                      <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+                      {/* UNIFIED DESIGN SYSTEM SWITCH (CARTÃO | ZELLE) */}
+                      <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
                         <button
                           type="button"
                           onClick={() => setHomeMethod('card')}
-                          className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                             homeMethod === 'card'
                               ? 'bg-white text-primary shadow-sm'
                               : 'text-slate-500 hover:text-primary'
@@ -234,21 +209,8 @@ export const MockupsPreviewPage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => setHomeMethod('venmo')}
-                          className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                            homeMethod === 'venmo'
-                              ? 'bg-white text-primary shadow-sm'
-                              : 'text-slate-500 hover:text-primary'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-base">qr_code_2</span>
-                          Venmo
-                        </button>
-
-                        <button
-                          type="button"
                           onClick={() => setHomeMethod('zelle')}
-                          className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                             homeMethod === 'zelle'
                               ? 'bg-white text-primary shadow-sm'
                               : 'text-slate-500 hover:text-primary'
@@ -310,55 +272,6 @@ export const MockupsPreviewPage: React.FC = () => {
                           <span>Avançar para Pagamento (${homeAmount || homeCustomAmount || '50'})</span>
                           <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">east</span>
                         </button>
-                      </div>
-                    )}
-
-                    {/* VIEW B: VENMO QR CODE METHOD */}
-                    {homeMethod === 'venmo' && (
-                      <div className="space-y-4 text-center">
-                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center">
-                          <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">
-                            Escaneie pelo aplicativo Venmo
-                          </span>
-
-                          {homeQrUrl ? (
-                            <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block mb-3">
-                              <img src={homeQrUrl} alt="Venmo QR Code" className="size-44 object-contain" />
-                            </div>
-                          ) : (
-                            <div className="size-44 bg-slate-100 rounded-2xl animate-pulse mb-3"></div>
-                          )}
-
-                          <p className="text-xs font-bold text-slate-700">
-                            Valor configurado: <strong className="text-primary font-black text-sm">${homeAmount || homeCustomAmount || '50'} USD</strong>
-                          </p>
-
-                          <div className="mt-3 flex items-center gap-2 w-full max-w-xs">
-                            <input
-                              readOnly
-                              value={adminVenmoHandle}
-                              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 flex-1 text-center"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(adminVenmoHandle, 'Handle Venmo')}
-                              className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-black flex items-center gap-1 transition-colors cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-sm">content_copy</span>
-                              Copiar
-                            </button>
-                          </div>
-                        </div>
-
-                        <a
-                          href={`https://venmo.com/u/${adminVenmoHandle.replace('@', '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full bg-accent hover:bg-orange-600 text-white py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-base">open_in_new</span>
-                          Abrir no App do Venmo
-                        </a>
                       </div>
                     )}
 
@@ -509,16 +422,16 @@ export const MockupsPreviewPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* EXACT IDENTICAL SWITCH (CARTÃO | VENMO | ZELLE) */}
+                      {/* EXACT IDENTICAL SWITCH (CARTÃO | ZELLE) */}
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
                           Forma de Pagamento
                         </label>
-                        <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
+                        <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
                           <button
                             type="button"
                             onClick={() => setProductMethod('card')}
-                            className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                               productMethod === 'card'
                                 ? 'bg-white text-primary shadow-sm'
                                 : 'text-slate-500 hover:text-primary'
@@ -530,21 +443,8 @@ export const MockupsPreviewPage: React.FC = () => {
 
                           <button
                             type="button"
-                            onClick={() => setProductMethod('venmo')}
-                            className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              productMethod === 'venmo'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-slate-500 hover:text-primary'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-base">qr_code_2</span>
-                            Venmo
-                          </button>
-
-                          <button
-                            type="button"
                             onClick={() => setProductMethod('zelle')}
-                            className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                               productMethod === 'zelle'
                                 ? 'bg-white text-primary shadow-sm'
                                 : 'text-slate-500 hover:text-primary'
@@ -572,43 +472,6 @@ export const MockupsPreviewPage: React.FC = () => {
                             <span>Comprar com Cartão ($25.00)</span>
                             <span className="material-symbols-outlined">east</span>
                           </button>
-                        </div>
-                      )}
-
-                      {/* PRODUCT VENMO VIEW */}
-                      {productMethod === 'venmo' && (
-                        <div className="space-y-4 text-center">
-                          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center">
-                            {productQrUrl ? (
-                              <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block mb-2">
-                                <img src={productQrUrl} alt="Venmo Product QR" className="size-40 object-contain" />
-                              </div>
-                            ) : null}
-                            <p className="text-xs font-bold text-slate-700">
-                              Escaneie para pagar <strong className="text-primary font-black">$25.00 USD</strong>
-                            </p>
-                            <span className="text-[11px] text-slate-400 font-mono">Nota: "Camiseta Oficial Bridges"</span>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(adminVenmoHandle, 'Handle Venmo')}
-                              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl flex items-center justify-center gap-1 uppercase tracking-wider cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-sm">content_copy</span>
-                              Copiar @
-                            </button>
-                            <a
-                              href={`https://venmo.com/u/${adminVenmoHandle.replace('@', '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 py-3 bg-accent hover:bg-orange-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1 uppercase tracking-wider shadow-xl shadow-accent/20 cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-sm">open_in_new</span>
-                              Abrir no Venmo
-                            </a>
-                          </div>
                         </div>
                       )}
 
@@ -662,9 +525,9 @@ export const MockupsPreviewPage: React.FC = () => {
             <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-black text-accent uppercase tracking-widest block">Tela 3 / 3</span>
-                <h2 className="text-lg font-black text-primary font-heading">Painel de Administração: Aba Zelle & Venmo</h2>
+                <h2 className="text-lg font-black text-primary font-heading">Painel de Administração: Aba Chave Zelle</h2>
               </div>
-              <span className="text-xs font-bold text-slate-500">Edite as chaves para recalcular os QR Codes em tempo real</span>
+              <span className="text-xs font-bold text-slate-500">Edite a chave para recalcular o QR Code em tempo real</span>
             </div>
 
             {/* Admin Console Container */}
@@ -672,9 +535,9 @@ export const MockupsPreviewPage: React.FC = () => {
               {/* Tabs Bar Header (Identical to AdminPage.tsx) */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
                 <div>
-                  <h3 className="text-2xl font-black text-primary font-heading">Configurações de Pagamentos Diretos</h3>
+                  <h3 className="text-2xl font-black text-primary font-heading">Configurações de Pagamento Zelle</h3>
                   <p className="text-xs text-slate-500 font-bold mt-1">
-                    Cadastre suas chaves e o sistema gerará automaticamente os QR Codes oficiais nos formatos do sistema.
+                    Cadastre a chave Zelle oficial e o sistema gerará automaticamente o QR Code oficial nos fluxos de doação.
                   </p>
                 </div>
 
@@ -690,7 +553,7 @@ export const MockupsPreviewPage: React.FC = () => {
                     Apoios
                   </span>
                   <span className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider bg-white shadow-sm text-primary">
-                    Zelle & Venmo
+                    Chave Zelle
                   </span>
                   <span className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider text-slate-500">
                     Segurança
@@ -698,163 +561,81 @@ export const MockupsPreviewPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Grid with Zelle and Venmo Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 1. ZELLE CONFIGURATION CARD */}
-                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-2xl bg-primary text-white flex items-center justify-center font-black">
-                        <span className="material-symbols-outlined">qr_code_scanner</span>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-black text-primary font-heading">Configuração Zelle</h4>
-                        <p className="text-xs text-slate-500 font-bold">Transferência bancária direta (EUA)</p>
-                      </div>
+              {/* Zelle Configuration Card */}
+              <div className="max-w-2xl mx-auto p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-2xl bg-primary text-white flex items-center justify-center font-black">
+                      <span className="material-symbols-outlined">qr_code_scanner</span>
                     </div>
-                    
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span className="text-[10px] font-black uppercase text-slate-400">Ativo</span>
-                      <input
-                        type="checkbox"
-                        checked={adminZelleEnabled}
-                        onChange={(e) => setAdminZelleEnabled(e.target.checked)}
-                        className="size-5 accent-accent cursor-pointer"
-                      />
+                    <div>
+                      <h4 className="text-lg font-black text-primary font-heading">Configuração Zelle</h4>
+                      <p className="text-xs text-slate-500 font-bold">Transferência bancária direta (EUA)</p>
+                    </div>
+                  </div>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className="text-[10px] font-black uppercase text-slate-400">Ativo</span>
+                    <input
+                      type="checkbox"
+                      checked={adminZelleEnabled}
+                      onChange={(e) => setAdminZelleEnabled(e.target.checked)}
+                      className="size-5 accent-accent cursor-pointer"
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                      Chave Zelle (E-mail ou Telefone da ONG)
                     </label>
+                    <input
+                      type="text"
+                      value={adminZelleKey}
+                      onChange={(e) => setAdminZelleKey(e.target.value)}
+                      placeholder="ex: donate@buildingbridgesbrusa.org"
+                      className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
+                    />
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                        Chave Zelle (E-mail ou Telefone da ONG)
-                      </label>
-                      <input
-                        type="text"
-                        value={adminZelleKey}
-                        onChange={(e) => setAdminZelleKey(e.target.value)}
-                        placeholder="ex: donate@buildingbridgesbrusa.org"
-                        className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                        Nome do Titular da Conta (Account Holder)
-                      </label>
-                      <input
-                        type="text"
-                        value={adminZelleHolder}
-                        onChange={(e) => setAdminZelleHolder(e.target.value)}
-                        placeholder="ex: Building Bridges Foundation Inc."
-                        className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Live Dynamic QR Code Preview Box */}
-                  <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
-                    <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
-                      {adminZelleQrUrl && (
-                        <img src={adminZelleQrUrl} alt="Zelle Live Preview" className="size-32 object-contain" />
-                      )}
-                    </div>
-                    <div className="space-y-2 text-center sm:text-left flex-1">
-                      <span className="text-[10px] font-black text-success uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1">
-                        <span className="material-symbols-outlined text-xs">sync</span>
-                        QR Code Gerado em Tempo Real
-                      </span>
-                      <p className="text-xs font-bold text-slate-600">
-                        Renderizado na cor primária institucional (#0a3161).
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(adminZelleKey, 'Chave Zelle')}
-                        className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-black inline-flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm">content_copy</span>
-                        Testar Cópia
-                      </button>
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                      Nome do Titular da Conta (Account Holder)
+                    </label>
+                    <input
+                      type="text"
+                      value={adminZelleHolder}
+                      onChange={(e) => setAdminZelleHolder(e.target.value)}
+                      placeholder="ex: Building Bridges Foundation Inc."
+                      className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
+                    />
                   </div>
                 </div>
 
-                {/* 2. VENMO CONFIGURATION CARD */}
-                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-2xl bg-primary text-white flex items-center justify-center font-black">
-                        <span className="material-symbols-outlined">payments</span>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-black text-primary font-heading">Configuração Venmo</h4>
-                        <p className="text-xs text-slate-500 font-bold">Pagamento social e móvel nos EUA</p>
-                      </div>
-                    </div>
-                    
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span className="text-[10px] font-black uppercase text-slate-400">Ativo</span>
-                      <input
-                        type="checkbox"
-                        checked={adminVenmoEnabled}
-                        onChange={(e) => setAdminVenmoEnabled(e.target.checked)}
-                        className="size-5 accent-accent cursor-pointer"
-                      />
-                    </label>
+                {/* Live Dynamic QR Code Preview Box */}
+                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
+                    {adminZelleQrUrl && (
+                      <img src={adminZelleQrUrl} alt="Zelle Live Preview" className="size-32 object-contain" />
+                    )}
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                        Handle / Usuário Venmo (@username)
-                      </label>
-                      <input
-                        type="text"
-                        value={adminVenmoHandle}
-                        onChange={(e) => setAdminVenmoHandle(e.target.value)}
-                        placeholder="ex: @buildingbridges"
-                        className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                        Nome de Exibição no Venmo
-                      </label>
-                      <input
-                        type="text"
-                        value={adminVenmoHolder}
-                        onChange={(e) => setAdminVenmoHolder(e.target.value)}
-                        placeholder="ex: Building Bridges USA"
-                        className="w-full bg-white border-2 border-slate-200 focus:border-accent rounded-xl py-3.5 px-4 outline-none font-bold text-sm text-slate-800 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Live Dynamic Venmo QR Code Preview Box */}
-                  <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
-                    <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
-                      {adminVenmoQrUrl && (
-                        <img src={adminVenmoQrUrl} alt="Venmo Live Preview" className="size-32 object-contain" />
-                      )}
-                    </div>
-                    <div className="space-y-2 text-center sm:text-left flex-1">
-                      <span className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1">
-                        <span className="material-symbols-outlined text-xs">link</span>
-                        Link Direto Configurado
-                      </span>
-                      <p className="text-xs font-bold text-slate-600">
-                        Destino: <code className="text-xs font-mono text-primary font-bold">https://venmo.com/u/{adminVenmoHandle.replace('@', '')}</code>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(adminVenmoHandle, 'Handle Venmo')}
-                        className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-black inline-flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm">content_copy</span>
-                        Testar Cópia
-                      </button>
-                    </div>
+                  <div className="space-y-2 text-center sm:text-left flex-1">
+                    <span className="text-[10px] font-black text-success uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1">
+                      <span className="material-symbols-outlined text-xs">sync</span>
+                      QR Code Gerado em Tempo Real
+                    </span>
+                    <p className="text-xs font-bold text-slate-600">
+                      Renderizado na cor primária institucional (#0a3161).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(adminZelleKey, 'Chave Zelle')}
+                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-black inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">content_copy</span>
+                      Testar Cópia
+                    </button>
                   </div>
                 </div>
               </div>

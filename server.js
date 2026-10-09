@@ -501,6 +501,26 @@ async function initializeDatabase() {
       try { await pool.query('SET FOREIGN_KEY_CHECKS = 1'); } catch (_) {}
     }
     
+    // Create the 'settings' table if it does not exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`settings\` (
+        \`setting_key\` VARCHAR(100) NOT NULL,
+        \`setting_value\` TEXT NULL,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`setting_key\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Seed default settings if they do not exist
+    try {
+      await pool.query(`
+        INSERT IGNORE INTO \`settings\` (\`setting_key\`, \`setting_value\`)
+        VALUES 
+          ('zelle_key', 'donate@buildingbridgesbrusa.org'),
+          ('zelle_name', 'Building Bridges Foundation Inc.');
+      `);
+    } catch (_) {}
+
     console.log('Database tables verified.');
 
     // Verify and alter projects & initiatives tables to support LONGTEXT for image_url (for Base64 support on Hostinger)
@@ -1746,6 +1766,58 @@ app.post('/api/contributions/:id/status', async (req, res) => {
   } catch (err) {
     console.error('API Error POST /api/contributions/:id/status:', err);
     res.status(500).json({ error: 'Database error updating contribution status.' });
+  }
+});
+
+// GET /api/settings/zelle - Public endpoint to retrieve Zelle payment configurations
+app.get('/api/settings/zelle', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT `setting_key`, `setting_value` FROM `settings` WHERE `setting_key` IN ("zelle_key", "zelle_name")');
+    const settings = {
+      zelle_key: 'donate@buildingbridgesbrusa.org',
+      zelle_name: 'Building Bridges Foundation Inc.'
+    };
+    for (const row of rows) {
+      if (row.setting_key === 'zelle_key' && row.setting_value) settings.zelle_key = row.setting_value;
+      if (row.setting_key === 'zelle_name' && row.setting_value) settings.zelle_name = row.setting_value;
+    }
+    res.json(settings);
+  } catch (err) {
+    console.error('API Error /api/settings/zelle:', err);
+    res.json({
+      zelle_key: 'donate@buildingbridgesbrusa.org',
+      zelle_name: 'Building Bridges Foundation Inc.'
+    });
+  }
+});
+
+// PUT /api/settings/zelle - Protected endpoint for admins to update Zelle configuration
+app.put('/api/settings/zelle', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Authorization token required.', code: 'UNAUTHORIZED' });
+    }
+
+    const { zelle_key, zelle_name } = req.body;
+    if (!zelle_key || typeof zelle_key !== 'string') {
+      return res.status(400).json({ error: 'Chave Zelle é obrigatória.' });
+    }
+
+    const cleanKey = zelle_key.trim();
+    const cleanName = (zelle_name || 'Building Bridges Foundation Inc.').trim();
+
+    await pool.query(`
+      INSERT INTO \`settings\` (\`setting_key\`, \`setting_value\`)
+      VALUES ('zelle_key', ?), ('zelle_name', ?)
+      ON DUPLICATE KEY UPDATE \`setting_value\` = VALUES(\`setting_value\`);
+    `, [cleanKey, cleanName]);
+
+    console.log(`[SETTINGS] Zelle settings updated by user ${user.id}: key=${cleanKey}, name=${cleanName}`);
+    res.json({ success: true, zelle_key: cleanKey, zelle_name: cleanName });
+  } catch (err) {
+    console.error('API Error /api/settings/zelle (PUT):', err);
+    res.status(500).json({ error: 'Erro ao salvar configurações do Zelle no banco de dados.' });
   }
 });
 

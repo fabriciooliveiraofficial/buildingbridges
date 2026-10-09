@@ -105,6 +105,21 @@ CREATE TABLE IF NOT EXISTS `contributions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ----------------------------------------------------------
+-- 5. Table structure for `settings` (Platform Configurations)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `settings` (
+  `setting_key` VARCHAR(100) NOT NULL,
+  `setting_value` TEXT NULL,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `settings` (`setting_key`, `setting_value`) VALUES
+('zelle_key', 'donate@buildingbridgesbrusa.org'),
+('zelle_name', 'Building Bridges Foundation Inc.');
+
+
 -- ==========================================================
 -- SEED DATA SECTION
 -- ==========================================================

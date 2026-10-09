@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,8 +13,17 @@ export const AdminPage: React.FC = () => {
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
-  // Console state: 'mission', 'initiative', 'pledges' or 'account'
-  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative' | 'pledges' | 'account'>('mission');
+  // Console state: 'mission', 'initiative', 'pledges', 'account' or 'zelle'
+  const [activeConsole, setActiveConsole] = useState<'mission' | 'initiative' | 'pledges' | 'account' | 'zelle'>('mission');
+
+  // ZELLE SETTINGS STATE
+  const [adminZelleKey, setAdminZelleKey] = useState('donate@buildingbridgesbrusa.org');
+  const [adminZelleHolder, setAdminZelleHolder] = useState('Building Bridges Foundation Inc.');
+  const [zelleLoading, setZelleLoading] = useState(false);
+  const [zelleSaving, setZelleSaving] = useState(false);
+  const [zellePreviewQr, setZellePreviewQr] = useState('');
+  const [zelleSuccessMsg, setZelleSuccessMsg] = useState('');
+  const [zelleErrorMsg, setZelleErrorMsg] = useState('');
 
   // UI state for showing list vs form
   const [showForm, setShowForm] = useState(false);
@@ -168,6 +178,67 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  // Fetch Zelle Settings
+  const fetchZelleSettings = async () => {
+    setZelleLoading(true);
+    try {
+      const response = await fetch(`/api/settings/zelle?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.zelle_key) setAdminZelleKey(data.zelle_key);
+        if (data.zelle_name) setAdminZelleHolder(data.zelle_name);
+      }
+    } catch (err) {
+      console.error('Failed to load Zelle settings:', err);
+    } finally {
+      setZelleLoading(false);
+    }
+  };
+
+  // Generate Zelle preview QR code
+  useEffect(() => {
+    if (adminZelleKey) {
+      QRCode.toDataURL(adminZelleKey, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
+        .then(setZellePreviewQr)
+        .catch(console.error);
+    }
+  }, [adminZelleKey]);
+
+  // Handle Save Zelle Settings
+  const handleSaveZelle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setZelleSaving(true);
+    setZelleSuccessMsg('');
+    setZelleErrorMsg('');
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/settings/zelle', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          zelle_key: adminZelleKey,
+          zelle_name: adminZelleHolder
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha ao salvar configurações do Zelle.');
+      }
+
+      setZelleSuccessMsg('Chave Zelle atualizada com sucesso! O novo QR Code já está ativo no site.');
+      setTimeout(() => setZelleSuccessMsg(''), 5000);
+    } catch (err: any) {
+      setZelleErrorMsg(err.message || 'Erro ao conectar ao servidor.');
+    } finally {
+      setZelleSaving(false);
+    }
+  };
+
   // Fetch data automatically based on active tab
   useEffect(() => {
     setMessage({ type: '', text: '' });
@@ -183,6 +254,8 @@ export const AdminPage: React.FC = () => {
     } else if (activeConsole === 'initiative') {
       fetchMissions();
       fetchInitiatives();
+    } else if (activeConsole === 'zelle') {
+      fetchZelleSettings();
     }
   }, [activeConsole]);
 
@@ -526,6 +599,18 @@ export const AdminPage: React.FC = () => {
             <span className="material-symbols-outlined text-base">manage_accounts</span>
             {t('admin.tabAccount')}
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveConsole('zelle')}
+            className={`px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all w-full md:w-auto flex items-center justify-center gap-1.5 ${
+              activeConsole === 'zelle'
+                ? 'bg-white shadow-sm text-primary'
+                : 'text-slate-500 hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+            Chave Zelle
+          </button>
         </div>
       </div>
 
@@ -553,6 +638,134 @@ export const AdminPage: React.FC = () => {
       {activeConsole === 'account' ? (
         // ================== ACCOUNT SECURITY (password / recovery e-mail) ==================
         <AccountSecurityPanel />
+      ) : activeConsole === 'zelle' ? (
+        // ================== ZELLE SETTINGS DASHBOARD ==================
+        <div className="bg-white rounded-3xl border border-primary/5 shadow-xl p-6 sm:p-10 space-y-8">
+          <div className="border-b border-slate-100 pb-6 flex items-center justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent text-[11px] font-black uppercase tracking-wider mb-2">
+                <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                Gateway Instantâneo EUA
+              </div>
+              <h2 className="text-2xl font-black text-primary">Configurações de Pagamento Zelle</h2>
+              <p className="text-slate-500 font-bold text-sm mt-1">
+                Configure a chave e o titular do Zelle. O QR Code e a chave serão atualizados imediatamente na Página Inicial e no Checkout.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchZelleSettings}
+              disabled={zelleLoading}
+              className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm">refresh</span>
+              Atualizar
+            </button>
+          </div>
+
+          {zelleSuccessMsg && (
+            <div className="p-4 bg-success/10 border border-success/20 text-success text-sm font-black rounded-2xl flex items-center gap-2">
+              <span className="material-symbols-outlined">check_circle</span>
+              {zelleSuccessMsg}
+            </div>
+          )}
+
+          {zelleErrorMsg && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-black rounded-2xl flex items-center gap-2">
+              <span className="material-symbols-outlined">error</span>
+              {zelleErrorMsg}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Form Column */}
+            <form onSubmit={handleSaveZelle} className="lg:col-span-7 space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-primary uppercase tracking-wider block">
+                  Chave Zelle (E-mail ou Telefone oficial) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={adminZelleKey}
+                  onChange={(e) => setAdminZelleKey(e.target.value)}
+                  placeholder="Ex: donate@buildingbridgesbrusa.org"
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-4 px-5 outline-none font-bold text-slate-800 transition-all text-sm"
+                />
+                <p className="text-[11px] text-slate-400 font-bold leading-relaxed">
+                  Esta é a chave que o doador copia e cola no aplicativo bancário (Chase, Bank of America, Wells Fargo, etc.), e a mesma usada para codificar o QR Code.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-primary uppercase tracking-wider block">
+                  Nome do Titular / Razão Social da Conta *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={adminZelleHolder}
+                  onChange={(e) => setAdminZelleHolder(e.target.value)}
+                  placeholder="Ex: Building Bridges Foundation Inc."
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-accent focus:bg-white rounded-xl py-4 px-5 outline-none font-bold text-slate-800 transition-all text-sm"
+                />
+                <p className="text-[11px] text-slate-400 font-bold leading-relaxed">
+                  Exibido para o usuário como confirmação do destinatário oficial para garantir confiança e segurança antes da transferência.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={zelleSaving || zelleLoading}
+                  className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-orange-600 text-white rounded-xl font-black text-sm uppercase tracking-wider shadow-xl shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {zelleSaving ? (
+                    <>
+                      <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-lg">save</span>
+                      <span>Salvar Configurações Zelle</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Live Preview Column */}
+            <div className="lg:col-span-5 bg-slate-50 border border-slate-200/80 rounded-3xl p-6 text-center space-y-4">
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest block">
+                Pré-Visualização ao Vivo (Como o Doador Vê)
+              </span>
+
+              <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block">
+                {zellePreviewQr ? (
+                  <img src={zellePreviewQr} alt="Zelle QR Code Preview" className="size-44 object-contain mx-auto" />
+                ) : (
+                  <div className="size-44 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs font-bold mx-auto">
+                    Digite a chave acima
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-bold text-slate-500">Destinatário Oficial:</p>
+                <p className="text-xs font-black text-primary">{adminZelleHolder || 'Nome não definido'}</p>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 truncate">
+                {adminZelleKey || 'Chave não informada'}
+              </div>
+
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Isento de taxas bancárias • Rede Instantânea Zelle
+              </p>
+            </div>
+          </div>
+        </div>
       ) : activeConsole === 'pledges' ? (
         // ================== PLEDGES LIST DASHBOARD ==================
         <div className="bg-white rounded-3xl border border-primary/5 shadow-xl p-6 sm:p-8 space-y-6">

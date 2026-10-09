@@ -20,14 +20,13 @@ export const HomePage: React.FC = () => {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxTitle, setLightboxTitle] = useState('');
 
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'venmo' | 'zelle'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'zelle'>('card');
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Official Zelle & Venmo Credentials (from approved design system)
-  const zelleKey = 'donate@buildingbridgesbrusa.org';
-  const zelleHolder = 'Building Bridges Foundation Inc.';
-  const venmoHandle = '@buildingbridges';
+  // Dynamic Zelle Credentials loaded from server with official fallback
+  const [zelleKey, setZelleKey] = useState('donate@buildingbridgesbrusa.org');
+  const [zelleHolder, setZelleHolder] = useState('Building Bridges Foundation Inc.');
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -35,21 +34,25 @@ export const HomePage: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2500);
   };
 
-  // Generate QR Code dynamically based on payment method and amount
+  // Fetch Zelle settings from backend
   useEffect(() => {
-    const val = donationAmount || '50';
-    if (paymentMethod === 'zelle') {
+    fetch('/api/settings/zelle')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.zelle_key) setZelleKey(data.zelle_key);
+        if (data && data.zelle_name) setZelleHolder(data.zelle_name);
+      })
+      .catch(err => console.error('Failed to load Zelle settings:', err));
+  }, []);
+
+  // Generate QR Code dynamically based on Zelle key
+  useEffect(() => {
+    if (paymentMethod === 'zelle' && zelleKey) {
       QRCode.toDataURL(zelleKey, { width: 240, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
         .then(setQrCodeUrl)
         .catch(console.error);
-    } else if (paymentMethod === 'venmo') {
-      const cleanVenmo = venmoHandle.replace('@', '');
-      const venmoPayLink = `https://venmo.com/u/${cleanVenmo}?txn=pay&amount=${val}&note=Building+Bridges+Donation`;
-      QRCode.toDataURL(venmoPayLink, { width: 240, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
-        .then(setQrCodeUrl)
-        .catch(console.error);
     }
-  }, [paymentMethod, donationAmount]);
+  }, [paymentMethod, zelleKey]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = 'https://picsum.photos/seed/mission-fallback/800/600';
@@ -134,12 +137,12 @@ export const HomePage: React.FC = () => {
               {t('donation.quick')}
             </h3>
 
-            {/* UNIFIED DESIGN SYSTEM SWITCH (CARTÃO | VENMO | ZELLE) */}
-            <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 mb-6">
+            {/* UNIFIED DESIGN SYSTEM SWITCH (CARTÃO | ZELLE) */}
+            <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 mb-6">
               <button
                 type="button"
                 onClick={() => setPaymentMethod('card')}
-                className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   paymentMethod === 'card'
                     ? 'bg-white text-primary shadow-sm'
                     : 'text-slate-500 hover:text-primary'
@@ -151,21 +154,8 @@ export const HomePage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setPaymentMethod('venmo')}
-                className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  paymentMethod === 'venmo'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-slate-500 hover:text-primary'
-                }`}
-              >
-                <span className="material-symbols-outlined text-base">qr_code_2</span>
-                Venmo
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setPaymentMethod('zelle')}
-                className={`py-2 px-2 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   paymentMethod === 'zelle'
                     ? 'bg-white text-primary shadow-sm'
                     : 'text-slate-500 hover:text-primary'
@@ -220,60 +210,6 @@ export const HomePage: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   <span className="material-symbols-outlined text-sm text-success">verified_user</span>
                   {t('donation.secure')}
-                </div>
-              </div>
-            )}
-
-            {/* VIEW B: VENMO QR CODE */}
-            {paymentMethod === 'venmo' && (
-              <div className="space-y-4 text-center">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center">
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">
-                    Escaneie pelo aplicativo Venmo
-                  </span>
-
-                  {qrCodeUrl ? (
-                    <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block mb-3">
-                      <img src={qrCodeUrl} alt="Venmo QR Code" className="size-44 object-contain" />
-                    </div>
-                  ) : (
-                    <div className="size-44 bg-slate-100 rounded-2xl animate-pulse mb-3"></div>
-                  )}
-
-                  <p className="text-xs font-bold text-slate-700">
-                    Valor configurado: <strong className="text-primary font-black text-sm">${donationAmount || '50'} USD</strong>
-                  </p>
-
-                  <div className="mt-3 flex items-center gap-2 w-full max-w-xs">
-                    <input
-                      readOnly
-                      value={venmoHandle}
-                      className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 flex-1 text-center"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(venmoHandle, 'Handle Venmo')}
-                      className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-black flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-sm">content_copy</span>
-                      Copiar
-                    </button>
-                  </div>
-                </div>
-
-                <a
-                  href={`https://venmo.com/u/${venmoHandle.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-accent hover:bg-orange-600 text-white py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-base">open_in_new</span>
-                  Abrir no App do Venmo
-                </a>
-
-                <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  <span className="material-symbols-outlined text-sm text-success">verified_user</span>
-                  Isento de taxas bancárias
                 </div>
               </div>
             )}
