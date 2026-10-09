@@ -1,0 +1,9 @@
+UPDATE `projects` SET `image_url` = '/uploads/project-rio-bonitopr-jc1rm.jpg' WHERE `id` = 'rio-bonitopr-jc1rm';
+UPDATE `projects` SET `image_url` = '/uploads/project-gulf-coast.png' WHERE `id` = 'gulf-coast';
+UPDATE `projects` SET `image_url` = '/uploads/project-rio-grande.jpg' WHERE `id` = 'rio-grande';
+UPDATE `projects` SET `image_url` = '/uploads/project-amazon-basin.jpg' WHERE `id` = 'amazon-basin';
+UPDATE `initiatives` SET `image_url` = '/uploads/initiative-linguica-goiana-xwor1.jpg' WHERE `id` = 'linguica-goiana-xwor1';
+UPDATE `initiatives` SET `image_url` = '/uploads/initiative-camiseta-oficial.jpg' WHERE `id` = 'camiseta-oficial';
+UPDATE `initiatives` SET `image_url` = '/uploads/initiative-bone-construtores.jpg' WHERE `id` = 'bone-construtores';
+UPDATE `initiatives` SET `image_url` = '/uploads/initiative-churrasco-solidario.jpg' WHERE `id` = 'churrasco-solidario';
+UPDATE `initiatives` SET `image_url` = '/uploads/initiative-corrida-comunitaria.jpg' WHERE `id` = 'corrida-comunitaria';
