@@ -24,6 +24,7 @@ import { RegisterPage } from './pages/Auth/RegisterPage';
 import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/Auth/ResetPasswordPage';
 import { InitiativesPage } from './pages/InitiativesPage';
+import { MockupsPreviewPage } from './pages/MockupsPreviewPage';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
               <PWAInstallPrompt />
               <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/mockups" element={<MockupsPreviewPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/action-hub" element={<InitiativesPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />

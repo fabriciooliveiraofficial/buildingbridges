@@ -794,11 +794,19 @@ async function saveVerifiedContribution({
 
 // REST API Endpoints
 
-// GET /api/projects - Retrieve list of all projects
+// GET /api/projects - Retrieve list of all projects with pagination
 app.get('/api/projects', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    const [rows] = await pool.query('SELECT * FROM `projects` ORDER BY `created_at` DESC LIMIT ?', [limit]);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 9;
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM `projects`');
+    const total = countRows[0].total;
+
+    // Get paginated data (excluding heavy LONGTEXT like body if it existed, but we only have description)
+    const [rows] = await pool.query('SELECT `id`, `name`, `description`, `goal_amount`, `raised_amount`, `image_url`, `status`, `created_at` FROM `projects` ORDER BY `created_at` DESC LIMIT ? OFFSET ?', [limit, offset]);
     
     // Parse JSON columns properly
     const projects = rows.map(project => {
@@ -814,7 +822,15 @@ app.get('/api/projects', async (req, res) => {
       return project;
     });
 
-    res.json(projects);
+    res.json({
+      projects,
+      meta: {
+        total,
+        page,
+        limit,
+        hasMore: offset + rows.length < total
+      }
+    });
   } catch (err) {
     console.error('API Error /api/projects:', err);
     res.status(500).json({ error: 'Database error fetching projects' });
@@ -934,55 +950,68 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
 });
 
-// POST /api/upload - Handle file upload and return its public URL path (converts to Base64 for Hostinger persistence)
+// POST /api/upload - Handle file upload and return its public URL path
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
     
-    // Read local uploaded file to Buffer
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const base64Data = fileBuffer.toString('base64');
-    const mimeType = req.file.mimetype;
+    // Return the relative URL to the saved file on disk
+    const publicUrl = `/uploads/${req.file.filename}`;
     
-    // Construct base64 Data URI
-    const dataUri = `data:${mimeType};base64,${base64Data}`;
-    
-    // Delete local temporary file from disk immediately to save space on Hostinger
-    fs.unlinkSync(req.file.path);
-    
-    console.log(`Image uploaded and converted to Base64 successfully (${req.file.size} bytes).`);
-    res.json({ publicUrl: dataUri });
+    console.log(`Image uploaded successfully to ${publicUrl} (${req.file.size} bytes).`);
+    res.json({ publicUrl: publicUrl });
   } catch (err) {
     console.error('Upload Error:', err);
     res.status(500).json({ error: err.message || 'Error processing file.' });
   }
 });
 
-// GET /api/initiatives - Retrieve all initiatives, optionally filtered by project_id (with admin support for all=true)
+// GET /api/initiatives - Retrieve all initiatives, optionally filtered by project_id (with admin support for all=true), with pagination
 app.get('/api/initiatives', async (req, res) => {
   try {
     const projectId = req.query.project_id;
     const showAll = req.query.all === 'true';
-    let rows;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 9;
+    const offset = (page - 1) * limit;
     
-    let query = 'SELECT * FROM `initiatives`';
+    let countQuery = 'SELECT COUNT(*) as total FROM `initiatives`';
+    let query = 'SELECT `id`, `project_id`, `name`, `description`, `goal_amount`, `raised_amount`, `image_url`, `status`, `created_at` FROM `initiatives`';
     const params = [];
     
     if (projectId) {
+      countQuery += ' WHERE `project_id` = ?';
       query += ' WHERE `project_id` = ?';
       params.push(projectId);
       if (!showAll) {
+        countQuery += ' AND `status` = "active"';
         query += ' AND `status` = "active"';
       }
     } else if (!showAll) {
+      countQuery += ' WHERE `status` = "active"';
       query += ' WHERE `status` = "active"';
     }
     
-    query += ' ORDER BY `created_at` DESC';
-    [rows] = await pool.query(query, params);
-    res.json(rows);
+    query += ' ORDER BY `created_at` DESC LIMIT ? OFFSET ?';
+    
+    // Total count
+    const [countRows] = await pool.query(countQuery, params);
+    const total = countRows[0].total;
+
+    // Paginated results
+    const [rows] = await pool.query(query, [...params, limit, offset]);
+    
+    res.json({
+      initiatives: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        hasMore: offset + rows.length < total
+      }
+    });
   } catch (err) {
     console.error('API Error /api/initiatives:', err);
     res.status(500).json({ error: 'Database error fetching initiatives' });

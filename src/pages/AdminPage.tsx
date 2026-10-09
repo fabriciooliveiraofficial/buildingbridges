@@ -93,7 +93,7 @@ export const AdminPage: React.FC = () => {
   const fetchMissions = async () => {
     setMissionsLoading(true);
     try {
-      const response = await fetch(`/api/projects?t=${Date.now()}`, {
+      const response = await fetch(`/api/projects?limit=100&t=${Date.now()}`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
@@ -101,10 +101,11 @@ export const AdminPage: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setMissionsList(data);
-        setProjectList(data);
-        if (data.length > 0 && !initiativeData.project_id) {
-          setInitiativeData(prev => ({ ...prev, project_id: data[0].id }));
+        const projectsArray = data.projects || (Array.isArray(data) ? data : []);
+        setMissionsList(projectsArray);
+        setProjectList(projectsArray);
+        if (projectsArray.length > 0 && !initiativeData.project_id) {
+          setInitiativeData(prev => ({ ...prev, project_id: projectsArray[0].id }));
         }
       }
     } catch (err) {
@@ -118,7 +119,7 @@ export const AdminPage: React.FC = () => {
   const fetchInitiatives = async () => {
     setInitiativesLoading(true);
     try {
-      const response = await fetch(`/api/initiatives?all=true&t=${Date.now()}`, {
+      const response = await fetch(`/api/initiatives?all=true&limit=100&t=${Date.now()}`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
@@ -126,7 +127,8 @@ export const AdminPage: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setInitiativeList(data);
+        const initArray = data.initiatives || (Array.isArray(data) ? data : []);
+        setInitiativeList(initArray);
       }
     } catch (err) {
       console.error('Failed to load initiatives:', err);

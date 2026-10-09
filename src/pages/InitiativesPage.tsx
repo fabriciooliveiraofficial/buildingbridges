@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
+import QRCode from 'qrcode';
 import { useCurrency } from '../contexts/CurrencyContext';
 import logoUrl from '../assets/logo_building_bridges.png';
 import { SEO } from '../components/SEO';
@@ -53,6 +54,40 @@ export const InitiativesPage: React.FC = () => {
   const [donationTier, setDonationTier] = useState<'suggested' | 'amplified' | 'double' | 'custom'>('suggested');
   const [checkoutStep, setCheckoutStep] = useState<'tier' | 'contact'>('tier');
   const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'BRL'>(currency as 'USD' | 'BRL' || 'USD');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'venmo' | 'zelle'>('card');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const zelleKey = 'donate@buildingbridgesbrusa.org';
+  const zelleHolder = 'Building Bridges Foundation Inc.';
+  const venmoHandle = '@buildingbridges';
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(label);
+    setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  useEffect(() => {
+    if (!selectedInitiative) return;
+    const { min, amplified, double } = getContributionValues(selectedInitiative.suggested_price, selectedCurrency);
+    let finalAmount = min;
+    if (donationTier === 'amplified') finalAmount = amplified;
+    if (donationTier === 'double') finalAmount = double;
+    if (donationTier === 'custom') finalAmount = parseFloat(customDonation) || min;
+
+    if (paymentMethod === 'zelle') {
+      QRCode.toDataURL(zelleKey, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
+        .then(setQrCodeUrl)
+        .catch(console.error);
+    } else if (paymentMethod === 'venmo') {
+      const cleanVenmo = venmoHandle.replace('@', '');
+      const venmoPayLink = `https://venmo.com/u/${cleanVenmo}?txn=pay&amount=${finalAmount}&note=${encodeURIComponent(selectedInitiative.title)}`;
+      QRCode.toDataURL(venmoPayLink, { width: 220, margin: 1, color: { dark: '#0a3161', light: '#ffffff' } })
+        .then(setQrCodeUrl)
+        .catch(console.error);
+    }
+  }, [selectedInitiative, paymentMethod, donationTier, customDonation, selectedCurrency]);
 
   const formatCurrencyValue = (amount: number, curr: 'USD' | 'BRL') => {
     if (curr === 'BRL') {
@@ -89,19 +124,23 @@ export const InitiativesPage: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const initResponse = await fetch('/api/initiatives');
+        const initResponse = await fetch('/api/initiatives?limit=100');
         if (!initResponse.ok) throw new Error('Failed to fetch initiatives');
         const initData = await initResponse.json();
         
-        const projResponse = await fetch('/api/projects');
+        const projResponse = await fetch('/api/projects?limit=100');
         if (!projResponse.ok) throw new Error('Failed to fetch projects');
         const projData = await projResponse.json();
 
-        if (projData) {
+        if (projData && projData.projects) {
+          setRawProjects(projData.projects);
+        } else if (Array.isArray(projData)) {
           setRawProjects(projData);
         }
 
-        if (initData) {
+        if (initData && initData.initiatives) {
+          setInitiatives(initData.initiatives);
+        } else if (Array.isArray(initData)) {
           setInitiatives(initData);
         }
       } catch (err) {
@@ -482,6 +521,55 @@ export const InitiativesPage: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* When USD, show UNIFIED DESIGN SYSTEM SWITCH (CARTÃO | VENMO | ZELLE) */}
+                        {selectedCurrency === 'USD' && (
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                              Forma de Pagamento
+                            </label>
+                            <div className="grid grid-cols-3 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                              <button
+                                type="button"
+                                onClick={() => setPaymentMethod('card')}
+                                className={`py-2 px-2 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  paymentMethod === 'card'
+                                    ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
+                                    : 'text-slate-500 hover:text-primary'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-base">credit_card</span>
+                                Cartão
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setPaymentMethod('venmo')}
+                                className={`py-2 px-2 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  paymentMethod === 'venmo'
+                                    ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
+                                    : 'text-slate-500 hover:text-primary'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-base">qr_code_2</span>
+                                Venmo
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setPaymentMethod('zelle')}
+                                className={`py-2 px-2 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  paymentMethod === 'zelle'
+                                    ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
+                                    : 'text-slate-500 hover:text-primary'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-base">qr_code_scanner</span>
+                                Zelle
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Price Psychology Framework Tiers */}
                         <div className="space-y-3">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Escolha seu Nível de Contribuição</label>
@@ -581,14 +669,111 @@ export const InitiativesPage: React.FC = () => {
                           </motion.div>
                         )}
 
-                        {/* Action Button */}
-                        <button 
-                          type="submit"
-                          className="w-full py-5 rounded-2xl bg-primary hover:bg-slate-800 text-white font-black text-lg transition-all shadow-xl shadow-primary/10 flex items-center justify-center gap-3"
-                        >
-                          <span>Proceder com a Contribuição</span>
-                          <span className="material-symbols-outlined">arrow_forward</span>
-                        </button>
+                        {/* VENMO QR CODE SECTION */}
+                        {selectedCurrency === 'USD' && paymentMethod === 'venmo' && (
+                          <div className="space-y-4 text-center">
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center">
+                              <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">
+                                Escaneie pelo aplicativo Venmo
+                              </span>
+                              {qrCodeUrl ? (
+                                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block mb-3">
+                                  <img src={qrCodeUrl} alt="Venmo QR Code" className="size-40 object-contain" />
+                                </div>
+                              ) : (
+                                <div className="size-40 bg-slate-100 rounded-2xl animate-pulse mb-3"></div>
+                              )}
+                              <div className="flex items-center gap-2 w-full max-w-xs">
+                                <input
+                                  readOnly
+                                  value={venmoHandle}
+                                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 flex-1 text-center"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(venmoHandle, 'Handle Venmo')}
+                                  className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-black flex items-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                                  Copiar
+                                </button>
+                              </div>
+                            </div>
+                            <a
+                              href={`https://venmo.com/u/${venmoHandle.replace('@', '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full bg-accent hover:bg-orange-600 text-white py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-base">open_in_new</span>
+                              Abrir no App do Venmo
+                            </a>
+                            <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              <span className="material-symbols-outlined text-sm text-success">verified_user</span>
+                              Isento de taxas bancárias
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ZELLE QR CODE SECTION */}
+                        {selectedCurrency === 'USD' && paymentMethod === 'zelle' && (
+                          <div className="space-y-4 text-center">
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center">
+                              <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-3">
+                                Escaneie no app do seu banco americano
+                              </span>
+                              {qrCodeUrl ? (
+                                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200/80 inline-block mb-3">
+                                  <img src={qrCodeUrl} alt="Zelle QR Code" className="size-40 object-contain" />
+                                </div>
+                              ) : (
+                                <div className="size-40 bg-slate-100 rounded-2xl animate-pulse mb-3"></div>
+                              )}
+                              <div className="space-y-0.5 mb-3">
+                                <p className="text-[11px] font-bold text-slate-500">Destinatário Oficial:</p>
+                                <p className="text-xs font-black text-primary">{zelleHolder}</p>
+                              </div>
+                              <div className="flex items-center gap-2 w-full max-w-xs">
+                                <input
+                                  readOnly
+                                  value={zelleKey}
+                                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-slate-700 flex-1 truncate text-center"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(zelleKey, 'Chave Zelle')}
+                                  className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-black flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                                >
+                                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                                  Copiar
+                                </button>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(zelleKey, 'Chave Zelle')}
+                              className="w-full bg-accent hover:bg-orange-600 text-white py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-sm">content_copy</span>
+                              Copiar Chave Zelle
+                            </button>
+                            <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              <span className="material-symbols-outlined text-sm text-success">verified_user</span>
+                              Isento de taxas bancárias
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Button (Para Cartão Stripe ou BRL Mercado Pago) */}
+                        {(selectedCurrency === 'BRL' || paymentMethod === 'card') && (
+                          <button 
+                            type="submit"
+                            className="w-full py-5 rounded-2xl bg-accent hover:bg-orange-600 text-white font-black text-lg transition-all shadow-xl shadow-accent/20 flex items-center justify-center gap-3 cursor-pointer"
+                          >
+                            <span>Proceder com a Contribuição</span>
+                            <span className="material-symbols-outlined">arrow_forward</span>
+                          </button>
+                        )}
                       </div>
                     );
                   })()

@@ -8,60 +8,78 @@ export const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data = await response.json();
-        
-        // Fallback data if API is empty or fails
-        const fallbackProjects = [
-          {
-            id: 'rio-grande',
-            name: t('missions.rio.title'),
-            description: t('missions.rio.desc'),
-            goal_amount: 500000,
-            raised_amount: 375000,
-            status: 'active'
-          },
-          {
-            id: 'gulf-coast',
-            name: t('missions.gulf.title'),
-            description: t('missions.gulf.desc'),
-            goal_amount: 750000,
-            raised_amount: 315000,
-            status: 'active'
-          },
-          {
-            id: 'amazon-basin',
-            name: t('missions.amazon.title'),
-            description: t('missions.amazon.desc'),
-            goal_amount: 300000,
-            raised_amount: 273000,
-            status: 'active'
-          }
-        ];
+  const fetchProjects = async (pageNum: number, isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+    
+    try {
+      const response = await fetch(`/api/projects?page=${pageNum}&limit=9`);
+      if (!response.ok) throw new Error('Failed to fetch projects');
+      const data = await response.json();
+      
+      // Fallback data if API is empty or fails
+      const fallbackProjects = [
+        {
+          id: 'rio-grande',
+          name: t('missions.rio.title'),
+          description: t('missions.rio.desc'),
+          goal_amount: 500000,
+          raised_amount: 375000,
+          status: 'active'
+        },
+        {
+          id: 'gulf-coast',
+          name: t('missions.gulf.title'),
+          description: t('missions.gulf.desc'),
+          goal_amount: 750000,
+          raised_amount: 315000,
+          status: 'active'
+        },
+        {
+          id: 'amazon-basin',
+          name: t('missions.amazon.title'),
+          description: t('missions.amazon.desc'),
+          goal_amount: 300000,
+          raised_amount: 273000,
+          status: 'active'
+        }
+      ];
 
-        if (data && data.length > 0) {
-          setProjects(data);
+      if (data && data.projects && data.projects.length > 0) {
+        if (isInitial) {
+          setProjects(data.projects);
         } else {
-          setProjects(fallbackProjects);
+          setProjects(prev => [...prev, ...data.projects]);
         }
-      } catch (err) {
-        // Silencing network errors to avoid console spam when dev credentials aren't fully set up
-        if (!(err instanceof TypeError && err.message === 'Failed to fetch')) {
-          console.error('Unexpected error fetching projects:', err);
-        }
-      } finally {
-        setLoading(false);
+        setHasMore(data.meta.hasMore);
+      } else if (isInitial) {
+        setProjects(fallbackProjects);
+        setHasMore(false);
       }
-    };
-    fetchProjects();
+    } catch (err) {
+      if (!(err instanceof TypeError && err.message === 'Failed to fetch')) {
+        console.error('Unexpected error fetching projects:', err);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects(1, true);
   }, [t]);
+
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProjects(nextPage, false);
+  };
 
   const filteredProjects = projects.filter(project => {
     if (statusFilter === 'all') return true;
@@ -95,11 +113,24 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {filteredProjects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-12 text-center">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-full transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? t('projects.loading') : t('common.loadMore', 'Ver Mais')}
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="py-20 text-center">
           <span className="material-symbols-outlined text-6xl text-slate-200 mb-4">search_off</span>

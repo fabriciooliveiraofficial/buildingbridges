@@ -67,12 +67,13 @@ export const CheckoutPage: React.FC = () => {
     const fetchProjects = async () => {
       setProjectsLoading(true);
       try {
-        const response = await fetch('/api/projects');
+        const response = await fetch('/api/projects?limit=100');
         if (response.ok) {
           const data = await response.json();
-          setProjectsList(data);
-          if (data.length > 0) {
-            setSelectedProject(data[0].id);
+          const projectsArray = data.projects || (Array.isArray(data) ? data : []);
+          setProjectsList(projectsArray);
+          if (projectsArray.length > 0) {
+            setSelectedProject(projectsArray[0].id);
           }
         }
       } catch (err) {
